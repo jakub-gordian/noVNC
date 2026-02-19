@@ -1,10 +1,10 @@
+import { describe, expect, test, beforeEach, afterEach, spyOn } from "bun:test";
+
 import _, { Localizer, l10n } from '../app/localization.js';
 
 describe('Localization', function () {
-    "use strict";
-
     let origNavigator;
-    let fetch;
+    let fetchSpy;
 
     beforeEach(function () {
         // window.navigator is a protected read-only property in many
@@ -15,123 +15,125 @@ describe('Localization', function () {
         Object.defineProperty(window, "navigator", {value: {}});
         window.navigator.languages = [];
 
-        fetch = sinon.stub(window, "fetch");
-        fetch.resolves(new Response("{}"));
+        fetchSpy = spyOn(window, "fetch").mockResolvedValue(new Response("{}"));
     });
     afterEach(function () {
-        fetch.restore();
+        fetchSpy.mockRestore();
 
         Object.defineProperty(window, "navigator", origNavigator);
     });
 
     describe('Singleton', function () {
-        it('should export a singleton object', function () {
-            expect(l10n).to.be.instanceOf(Localizer);
+        test('should export a singleton object', function () {
+            expect(l10n).toBeInstanceOf(Localizer);
         });
-        it('should export a singleton translation function', async function () {
+        test('should export a singleton translation function', async function () {
             // FIXME: Can we use some spy instead?
             window.navigator.languages = ["de"];
-            fetch.resolves(new Response(JSON.stringify({ "Foobar": "gazonk" })));
+            fetchSpy.mockResolvedValue(new Response(JSON.stringify({ "Foobar": "gazonk" })));
             await l10n.setup(["de"]);
-            expect(_("Foobar")).to.equal("gazonk");
+            expect(_("Foobar")).toBe("gazonk");
         });
     });
 
     describe('language selection', function () {
-        it('should use English by default', function () {
+        test('should use English by default', function () {
             let lclz = new Localizer();
-            expect(lclz.language).to.equal('en');
+            expect(lclz.language).toBe('en');
         });
-        it('should use English if no user language matches', async function () {
+        test('should use English if no user language matches', async function () {
             window.navigator.languages = ["nl", "de"];
             let lclz = new Localizer();
             await lclz.setup(["es", "fr"]);
-            expect(lclz.language).to.equal('en');
+            expect(lclz.language).toBe('en');
         });
-        it('should fall back to generic English for other English', async function () {
+        test('should fall back to generic English for other English', async function () {
             window.navigator.languages = ["en-AU", "de"];
             let lclz = new Localizer();
             await lclz.setup(["de", "fr", "en-GB"]);
-            expect(lclz.language).to.equal('en');
+            expect(lclz.language).toBe('en');
         });
-        it('should prefer specific English over generic', async function () {
+        test('should prefer specific English over generic', async function () {
             window.navigator.languages = ["en-GB", "de"];
             let lclz = new Localizer();
             await lclz.setup(["de", "en-AU", "en-GB"]);
-            expect(lclz.language).to.equal('en-GB');
+            expect(lclz.language).toBe('en-GB');
         });
-        it('should use the most preferred user language', async function () {
+        test('should use the most preferred user language', async function () {
             window.navigator.languages = ["nl", "de", "fr"];
             let lclz = new Localizer();
             await lclz.setup(["es", "fr", "de"]);
-            expect(lclz.language).to.equal('de');
+            expect(lclz.language).toBe('de');
         });
-        it('should prefer sub-languages languages', async function () {
+        test('should prefer sub-languages languages', async function () {
             window.navigator.languages = ["pt-BR"];
             let lclz = new Localizer();
             await lclz.setup(["pt", "pt-BR"]);
-            expect(lclz.language).to.equal('pt-BR');
+            expect(lclz.language).toBe('pt-BR');
         });
-        it('should fall back to language "parents"', async function () {
+        test('should fall back to language "parents"', async function () {
             window.navigator.languages = ["pt-BR"];
             let lclz = new Localizer();
             await lclz.setup(["fr", "pt", "de"]);
-            expect(lclz.language).to.equal('pt');
+            expect(lclz.language).toBe('pt');
         });
-        it('should not use specific language when user asks for a generic language', async function () {
+        test('should not use specific language when user asks for a generic language', async function () {
             window.navigator.languages = ["pt", "de"];
             let lclz = new Localizer();
             await lclz.setup(["fr", "pt-BR", "de"]);
-            expect(lclz.language).to.equal('de');
+            expect(lclz.language).toBe('de');
         });
-        it('should handle underscore as a separator', async function () {
+        test('should handle underscore as a separator', async function () {
             window.navigator.languages = ["pt-BR"];
             let lclz = new Localizer();
             await lclz.setup(["pt_BR"]);
-            expect(lclz.language).to.equal('pt_BR');
+            expect(lclz.language).toBe('pt_BR');
         });
-        it('should handle difference in case', async function () {
+        test('should handle difference in case', async function () {
             window.navigator.languages = ["pt-br"];
             let lclz = new Localizer();
             await lclz.setup(["pt-BR"]);
-            expect(lclz.language).to.equal('pt-BR');
+            expect(lclz.language).toBe('pt-BR');
         });
     });
 
     describe('Translation loading', function () {
-        it('should not fetch a translation for English', async function () {
+        test('should not fetch a translation for English', async function () {
             window.navigator.languages = [];
             let lclz = new Localizer();
             await lclz.setup([]);
-            expect(fetch).to.not.have.been.called;
+            expect(fetchSpy).not.toHaveBeenCalled();
         });
-        it('should fetch dictionary relative base URL', async function () {
+        test('should fetch dictionary relative base URL', async function () {
             window.navigator.languages = ["de", "fr"];
-            fetch.resolves(new Response('{ "Foobar": "gazonk" }'));
+            fetchSpy.mockResolvedValue(new Response('{ "Foobar": "gazonk" }'));
             let lclz = new Localizer();
             await lclz.setup(["ru", "fr"], "/some/path/");
-            expect(fetch).to.have.been.calledOnceWith("/some/path/fr.json");
-            expect(lclz.get("Foobar")).to.equal("gazonk");
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+            expect(fetchSpy).toHaveBeenCalledWith("/some/path/fr.json");
+            expect(lclz.get("Foobar")).toBe("gazonk");
         });
-        it('should handle base URL without trailing slash', async function () {
+        test('should handle base URL without trailing slash', async function () {
             window.navigator.languages = ["de", "fr"];
-            fetch.resolves(new Response('{ "Foobar": "gazonk" }'));
+            fetchSpy.mockResolvedValue(new Response('{ "Foobar": "gazonk" }'));
             let lclz = new Localizer();
             await lclz.setup(["ru", "fr"], "/some/path");
-            expect(fetch).to.have.been.calledOnceWith("/some/path/fr.json");
-            expect(lclz.get("Foobar")).to.equal("gazonk");
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+            expect(fetchSpy).toHaveBeenCalledWith("/some/path/fr.json");
+            expect(lclz.get("Foobar")).toBe("gazonk");
         });
-        it('should handle current base URL', async function () {
+        test('should handle current base URL', async function () {
             window.navigator.languages = ["de", "fr"];
-            fetch.resolves(new Response('{ "Foobar": "gazonk" }'));
+            fetchSpy.mockResolvedValue(new Response('{ "Foobar": "gazonk" }'));
             let lclz = new Localizer();
             await lclz.setup(["ru", "fr"]);
-            expect(fetch).to.have.been.calledOnceWith("fr.json");
-            expect(lclz.get("Foobar")).to.equal("gazonk");
+            expect(fetchSpy).toHaveBeenCalledTimes(1);
+            expect(fetchSpy).toHaveBeenCalledWith("fr.json");
+            expect(lclz.get("Foobar")).toBe("gazonk");
         });
-        it('should fail if dictionary cannot be found', async function () {
+        test('should fail if dictionary cannot be found', async function () {
             window.navigator.languages = ["de", "fr"];
-            fetch.resolves(new Response('{}', { status: 404 }));
+            fetchSpy.mockResolvedValue(new Response('{}', { status: 404 }));
             let lclz = new Localizer();
             let ok = false;
             try {
@@ -139,7 +141,7 @@ describe('Localization', function () {
             } catch (e) {
                 ok = true;
             }
-            expect(ok).to.be.true;
+            expect(ok).toBe(true);
         });
     });
 });
