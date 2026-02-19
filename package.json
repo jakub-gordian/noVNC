@@ -16,7 +16,7 @@
     "docs/LICENSE*"
   ],
   "scripts": {
-    "test": "bun test",
+    "test": "bun test ./tests/test.*.js",
     "lint": "eslint app core po/po2js po/xgettext-html tests utils",
     "typecheck": "tsc --noEmit"
   },
