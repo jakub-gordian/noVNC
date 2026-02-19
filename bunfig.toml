@@ -1,5 +1,5 @@
 # bunfig.toml
 
 [test]
-preload = ["happy-dom"]
+preload = ["./tests/happydom.ts"]
 root = "./tests"

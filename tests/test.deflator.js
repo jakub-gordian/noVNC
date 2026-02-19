@@ -1,3 +1,5 @@
+import { describe, expect, test } from "bun:test";
+import "./test-helpers.js";
 import { inflateInit, inflate } from "../vendor/pako/lib/zlib/inflate.js";
 import ZStream from "../vendor/pako/lib/zlib/zstream.js";
 import Deflator from "../core/deflator.js";
@@ -26,14 +28,14 @@ function _inflator(compText, expected) {
     let ret = inflate(strm, 0);
 
     // Check that return code is not an error
-    expect(ret).to.be.greaterThan(-1);
+    expect(ret).toBeGreaterThan(-1);
 
     return new Uint8Array(strm.output.buffer, 0, strm.next_out);
 }
 
-describe('Deflate data', function () {
+describe('Deflate data', () => {
 
-    it('should be able to deflate messages', function () {
+    test('should be able to deflate messages', () => {
         let deflator = new Deflator();
 
         let text = "123asdf";
@@ -45,11 +47,11 @@ describe('Deflate data', function () {
         let compText = deflator.deflate(preText);
 
         let inflatedText = _inflator(compText, text.length);
-        expect(inflatedText).to.array.equal(preText);
+        expect(inflatedText).toEqualArray(preText);
 
     });
 
-    it('should be able to deflate large messages', function () {
+    test('should be able to deflate large messages', () => {
         let deflator = new Deflator();
 
         /* Generate a big string with random characters. Used because
@@ -69,11 +71,11 @@ describe('Deflate data', function () {
         let compText = deflator.deflate(preText);
 
         //Check that the compressed size is expected size
-        expect(compText.length).to.be.greaterThan((1024 * 10 * 10) * 2);
+        expect(compText.length).toBeGreaterThan((1024 * 10 * 10) * 2);
 
         let inflatedText = _inflator(compText, text.length);
 
-        expect(inflatedText).to.array.equal(preText);
+        expect(inflatedText).toEqualArray(preText);
 
     });
 });

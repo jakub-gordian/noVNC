@@ -36,6 +36,7 @@
   "homepage": "https://github.com/novnc/noVNC",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@happy-dom/global-registrator": "^20.6.3",
     "@napi-rs/canvas": "^0.1.93",
     "eslint": "latest",
     "globals": "latest",

@@ -1,3 +1,5 @@
+import { describe, expect, test } from "bun:test";
+import "./test-helpers.js";
 import { deflateInit, deflate, Z_FULL_FLUSH } from "../vendor/pako/lib/zlib/deflate.js";
 import ZStream from "../vendor/pako/lib/zlib/zstream.js";
 import Inflator from "../core/inflator.js";
@@ -25,7 +27,7 @@ function _deflator(data) {
         let ret = deflate(strm, Z_FULL_FLUSH);
 
         // Check that return code is not an error
-        expect(ret).to.be.greaterThan(-1);
+        expect(ret).toBeGreaterThan(-1);
 
         let chunk = new Uint8Array(strm.output.buffer, 0, strm.next_out);
         totalLen += chunk.length;
@@ -45,9 +47,9 @@ function _deflator(data) {
     return outData;
 }
 
-describe('Inflate data', function () {
+describe('Inflate data', () => {
 
-    it('should be able to inflate messages', function () {
+    test('should be able to inflate messages', () => {
         let inflator = new Inflator();
 
         let text = "123asdf";
@@ -61,11 +63,11 @@ describe('Inflate data', function () {
         inflator.setInput(compText);
         let inflatedText = inflator.inflate(preText.length);
 
-        expect(inflatedText).to.array.equal(preText);
+        expect(inflatedText).toEqualArray(preText);
 
     });
 
-    it('should be able to inflate large messages', function () {
+    test('should be able to inflate large messages', () => {
         let inflator = new Inflator();
 
         /* Generate a big string with random characters. Used because
@@ -85,15 +87,15 @@ describe('Inflate data', function () {
         let compText = _deflator(preText);
 
         //Check that the compressed size is expected size
-        expect(compText.length).to.be.greaterThan((1024 * 10 * 10) * 2);
+        expect(compText.length).toBeGreaterThan((1024 * 10 * 10) * 2);
 
         inflator.setInput(compText);
         let inflatedText = inflator.inflate(preText.length);
 
-        expect(inflatedText).to.array.equal(preText);
+        expect(inflatedText).toEqualArray(preText);
     });
 
-    it('should throw an error on insufficient data', function () {
+    test('should throw an error on insufficient data', () => {
         let inflator = new Inflator();
 
         let text = "123asdf";
@@ -105,6 +107,6 @@ describe('Inflate data', function () {
         let compText = _deflator(preText);
 
         inflator.setInput(compText);
-        expect(() => inflator.inflate(preText.length * 2)).to.throw();
+        expect(() => inflator.inflate(preText.length * 2)).toThrow();
     });
 });
