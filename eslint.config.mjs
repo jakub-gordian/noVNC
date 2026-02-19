@@ -1,8 +1,10 @@
 import globals from "globals";
 import js from "@eslint/js";
+import tseslint from "typescript-eslint";
 
-export default [
+export default tseslint.config(
     js.configs.recommended,
+    ...tseslint.configs.recommended,
     {
         languageOptions: {
             ecmaVersion: 2022,
@@ -16,13 +18,19 @@ export default [
         rules: {
             // Unsafe or confusing stuff that we forbid
 
-            "no-unused-vars": ["error", { "vars": "all",
-                                          "args": "none",
-                                          "ignoreRestSiblings": true,
-                                          "caughtErrors": "none" }],
+            // Turn off base rules replaced by TS equivalents
+            "no-unused-vars": "off",
+            "no-useless-constructor": "off",
+
+            // Use TypeScript-aware equivalents
+            "@typescript-eslint/no-unused-vars": ["error", { "vars": "all",
+                                                             "args": "none",
+                                                             "ignoreRestSiblings": true,
+                                                             "caughtErrors": "none" }],
+            "@typescript-eslint/no-useless-constructor": "error",
+
             "no-constant-condition": ["error", { "checkLoops": false }],
             "no-var": "error",
-            "no-useless-constructor": "error",
             "object-shorthand": ["error", "methods", { "avoidQuotes": true }],
             "prefer-arrow-callback": "error",
             "arrow-body-style": ["error", "as-needed", { "requireReturnForObjectLiteral": false } ],
@@ -99,4 +107,4 @@ export default [
             "no-console": 0,
         },
     },
-];
+);
