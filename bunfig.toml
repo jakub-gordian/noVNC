@@ -1,0 +1,5 @@
+# bunfig.toml
+
+[test]
+preload = ["happy-dom"]
+root = "./tests"
