@@ -1,3 +1,6 @@
+import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
+import "./test-helpers.js";
+
 import Websock from '../core/websock.js';
 import Display from '../core/display.js';
 
@@ -109,133 +112,127 @@ function almost(a, b) {
 }
 
 describe('H.264 parser', function () {
-    it('should parse constrained baseline video', function () {
+    test('should parse constrained baseline video', function () {
         let parser = new H264Parser(redGreenBlue16x16Video);
 
         let frame = parser.parse();
-        expect(frame).to.have.property('key', true);
+        expect(frame.key).toBe(true);
 
-        expect(parser).to.have.property('profileIdc', 66);
-        expect(parser).to.have.property('constraintSet', 192);
-        expect(parser).to.have.property('levelIdc', 20);
-
-        frame = parser.parse();
-        expect(frame).to.have.property('key', false);
+        expect(parser.profileIdc).toBe(66);
+        expect(parser.constraintSet).toBe(192);
+        expect(parser.levelIdc).toBe(20);
 
         frame = parser.parse();
-        expect(frame).to.have.property('key', false);
+        expect(frame.key).toBe(false);
 
         frame = parser.parse();
-        expect(frame).to.be.null;
+        expect(frame.key).toBe(false);
+
+        frame = parser.parse();
+        expect(frame).toBeNull();
     });
 });
 
-describe('H.264 decoder unit test', function () {
+// Skip H.264 decoder unit tests -- WebCodecs H.264 decode is not available in Bun
+describe.skip('H.264 decoder unit test', function () {
     let decoder;
 
     beforeEach(function () {
-        if (!supportsWebCodecsH264Decode) {
-            this.skip();
-            return;
-        }
         decoder = new H264Decoder();
     });
 
-    it('creates and resets context', function () {
+    test('creates and resets context', function () {
         let context = decoder._getContext(1, 2, 3, 4);
-        expect(context._width).to.equal(3);
-        expect(context._height).to.equal(4);
-        expect(decoder._contexts).to.not.be.empty;
+        expect(context._width).toBe(3);
+        expect(context._height).toBe(4);
+        expect(Object.keys(decoder._contexts).length).toBeGreaterThan(0);
         decoder._resetContext(1, 2, 3, 4);
-        expect(decoder._contexts).to.be.empty;
+        expect(Object.keys(decoder._contexts).length).toBe(0);
     });
 
-    it('resets all contexts', function () {
+    test('resets all contexts', function () {
         decoder._getContext(0, 0, 1, 1);
         decoder._getContext(2, 2, 1, 1);
-        expect(decoder._contexts).to.not.be.empty;
+        expect(Object.keys(decoder._contexts).length).toBeGreaterThan(0);
         decoder._resetAllContexts();
-        expect(decoder._contexts).to.be.empty;
+        expect(Object.keys(decoder._contexts).length).toBe(0);
     });
 
-    it('caches contexts', function () {
+    test('caches contexts', function () {
         let c1 = decoder._getContext(1, 2, 3, 4);
         c1.lastUsed = 1;
         let c2 = decoder._getContext(1, 2, 3, 4);
         c2.lastUsed = 2;
-        expect(Object.keys(decoder._contexts).length).to.equal(1);
-        expect(c1.lastUsed).to.equal(c2.lastUsed);
+        expect(Object.keys(decoder._contexts).length).toBe(1);
+        expect(c1.lastUsed).toBe(c2.lastUsed);
     });
 
-    it('deletes oldest context', function () {
+    test('deletes oldest context', function () {
         for (let i = 0; i < 65; ++i) {
             let context = decoder._getContext(i, 0, 1, 1);
             context.lastUsed = i;
         }
 
-        expect(decoder._findOldestContextId()).to.equal('1,0,1,1');
-        expect(decoder._contexts[decoder._contextId(0, 0, 1, 1)]).to.be.undefined;
-        expect(decoder._contexts[decoder._contextId(1, 0, 1, 1)]).to.not.be.null;
-        expect(decoder._contexts[decoder._contextId(63, 0, 1, 1)]).to.not.be.null;
-        expect(decoder._contexts[decoder._contextId(64, 0, 1, 1)]).to.not.be.null;
+        expect(decoder._findOldestContextId()).toBe('1,0,1,1');
+        expect(decoder._contexts[decoder._contextId(0, 0, 1, 1)]).toBeUndefined();
+        expect(decoder._contexts[decoder._contextId(1, 0, 1, 1)]).not.toBeNull();
+        expect(decoder._contexts[decoder._contextId(63, 0, 1, 1)]).not.toBeNull();
+        expect(decoder._contexts[decoder._contextId(64, 0, 1, 1)]).not.toBeNull();
     });
 });
 
-describe('H.264 decoder functional test', function () {
+// Skip H.264 decoder functional tests -- WebCodecs H.264 decode is not available in Bun
+describe.skip('H.264 decoder functional test', function () {
     let decoder;
     let display;
 
-    before(FakeWebSocket.replace);
-    after(FakeWebSocket.restore);
+    beforeAll(FakeWebSocket.replace);
+    afterAll(FakeWebSocket.restore);
 
     beforeEach(function () {
-        if (!supportsWebCodecsH264Decode) {
-            this.skip();
-            return;
-        }
         decoder = new H264Decoder();
         display = new Display(document.createElement('canvas'));
         display.resize(16, 16);
     });
 
-    it('should handle H.264 rect', async function () {
+    test('should handle H.264 rect', async function () {
         let data = wrapRectData(redGreenBlue16x16Video, false, false);
         let done = testDecodeRect(decoder, 0, 0, 16, 16, data, display, 24);
-        expect(done).to.be.true;
+        expect(done).toBe(true);
         await display.flush();
         let targetData = createSolidColorFrameBuffer(0x0000ffff, 16, 16);
-        expect(display).to.have.displayed(targetData, almost);
+        expect(display).toHaveDisplayed(targetData, almost);
     });
 
-    it('should handle specific context reset', async function () {
+    test('should handle specific context reset', async function () {
         let data = wrapRectData(redGreenBlue16x16Video, false, false);
         let done = testDecodeRect(decoder, 0, 0, 16, 16, data, display, 24);
-        expect(done).to.be.true;
+        expect(done).toBe(true);
         await display.flush();
         let targetData = createSolidColorFrameBuffer(0x0000ffff, 16, 16);
-        expect(display).to.have.displayed(targetData, almost);
+        expect(display).toHaveDisplayed(targetData, almost);
 
         data = wrapRectData([], true, false);
         done = testDecodeRect(decoder, 0, 0, 16, 16, data, display, 24);
-        expect(done).to.be.true;
+        expect(done).toBe(true);
         await display.flush();
 
-        expect(decoder._contexts[decoder._contextId(0, 0, 16, 16)]._decoder).to.be.null;
+        expect(decoder._contexts[decoder._contextId(0, 0, 16, 16)]._decoder).toBeNull();
     });
 
-    it('should handle global context reset', async function () {
+    test('should handle global context reset', async function () {
         let data = wrapRectData(redGreenBlue16x16Video, false, false);
         let done = testDecodeRect(decoder, 0, 0, 16, 16, data, display, 24);
-        expect(done).to.be.true;
+        expect(done).toBe(true);
         await display.flush();
         let targetData = createSolidColorFrameBuffer(0x0000ffff, 16, 16);
-        expect(display).to.have.displayed(targetData, almost);
+        expect(display).toHaveDisplayed(targetData, almost);
 
         data = wrapRectData([], false, true);
         done = testDecodeRect(decoder, 0, 0, 16, 16, data, display, 24);
-        expect(done).to.be.true;
+        expect(done).toBe(true);
         await display.flush();
 
-        expect(decoder._contexts[decoder._contextId(0, 0, 16, 16)]._decoder).to.be.null;
+        expect(decoder._contexts[decoder._contextId(0, 0, 16, 16)]._decoder).toBeNull();
     });
 });

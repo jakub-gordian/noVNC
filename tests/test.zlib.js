@@ -1,3 +1,6 @@
+import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
+import "./test-helpers.js";
+
 import Websock from '../core/websock.js';
 import Display from '../core/display.js';
 
@@ -33,8 +36,8 @@ describe('Zlib decoder', function () {
     let decoder;
     let display;
 
-    before(FakeWebSocket.replace);
-    after(FakeWebSocket.restore);
+    beforeAll(FakeWebSocket.replace);
+    afterAll(FakeWebSocket.restore);
 
     beforeEach(function () {
         decoder = new ZlibDecoder();
@@ -42,7 +45,7 @@ describe('Zlib decoder', function () {
         display.resize(4, 4);
     });
 
-    it('should handle the Zlib encoding', function () {
+    test('should handle the Zlib encoding', function () {
         let done;
 
         let zlibData = new Uint8Array([
@@ -52,7 +55,7 @@ describe('Zlib decoder', function () {
             0x00, 0xff, 0xff,
         ]);
         done = testDecodeRect(decoder, 0, 0, 4, 4, zlibData, display, 24);
-        expect(done).to.be.true;
+        expect(done).toBe(true);
 
         let targetData = new Uint8ClampedArray([
             0xff, 0x00, 0x00, 255, 0x00, 0xff, 0x00, 255, 0x00, 0x00, 0xff, 255, 0x00, 0x00, 0xff, 255,
@@ -61,10 +64,10 @@ describe('Zlib decoder', function () {
             0xee, 0x00, 0xff, 255, 0x00, 0xee, 0xff, 255, 0xaa, 0xee, 0xff, 255, 0xab, 0xee, 0xff, 255
         ]);
 
-        expect(display).to.have.displayed(targetData);
+        expect(display).toHaveDisplayed(targetData);
     });
 
-    it('should handle empty rects', function () {
+    test('should handle empty rects', function () {
         display.fillRect(0, 0, 4, 4, [0x00, 0x00, 0xff]);
         display.fillRect(2, 0, 2, 2, [0x00, 0xff, 0x00]);
         display.fillRect(0, 2, 2, 2, [0x00, 0xff, 0x00]);
@@ -78,7 +81,7 @@ describe('Zlib decoder', function () {
             0x00, 0xff, 0x00, 255, 0x00, 0xff, 0x00, 255, 0x00, 0x00, 0xff, 255, 0x00, 0x00, 0xff, 255
         ]);
 
-        expect(done).to.be.true;
-        expect(display).to.have.displayed(targetData);
+        expect(done).toBe(true);
+        expect(display).toHaveDisplayed(targetData);
     });
 });

@@ -1,3 +1,6 @@
+import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
+import "./test-helpers.js";
+
 import Websock from '../core/websock.js';
 import Display from '../core/display.js';
 
@@ -33,8 +36,8 @@ describe('CopyRect decoder', function () {
     let decoder;
     let display;
 
-    before(FakeWebSocket.replace);
-    after(FakeWebSocket.restore);
+    beforeAll(FakeWebSocket.replace);
+    afterAll(FakeWebSocket.restore);
 
     beforeEach(function () {
         decoder = new CopyRectDecoder();
@@ -42,7 +45,7 @@ describe('CopyRect decoder', function () {
         display.resize(4, 4);
     });
 
-    it('should handle the CopyRect encoding', function () {
+    test('should handle the CopyRect encoding', function () {
         // seed some initial data to copy
         display.fillRect(0, 0, 4, 4, [ 0x11, 0x22, 0x33 ]);
         display.fillRect(0, 0, 2, 2, [ 0x00, 0x00, 0xff ]);
@@ -52,11 +55,11 @@ describe('CopyRect decoder', function () {
         done = testDecodeRect(decoder, 0, 2, 2, 2,
                               [0x00, 0x02, 0x00, 0x00],
                               display, 24);
-        expect(done).to.be.true;
+        expect(done).toBe(true);
         done = testDecodeRect(decoder, 2, 2, 2, 2,
                               [0x00, 0x00, 0x00, 0x00],
                               display, 24);
-        expect(done).to.be.true;
+        expect(done).toBe(true);
 
         let targetData = new Uint8Array([
             0x00, 0x00, 0xff, 255, 0x00, 0x00, 0xff, 255, 0x00, 0xff, 0x00, 255, 0x00, 0xff, 0x00, 255,
@@ -65,10 +68,10 @@ describe('CopyRect decoder', function () {
             0x00, 0xff, 0x00, 255, 0x00, 0xff, 0x00, 255, 0x00, 0x00, 0xff, 255, 0x00, 0x00, 0xff, 255
         ]);
 
-        expect(display).to.have.displayed(targetData);
+        expect(display).toHaveDisplayed(targetData);
     });
 
-    it('should handle empty rects', function () {
+    test('should handle empty rects', function () {
         display.fillRect(0, 0, 4, 4, [ 0x00, 0x00, 0xff ]);
         display.fillRect(2, 0, 2, 2, [ 0x00, 0xff, 0x00 ]);
         display.fillRect(0, 2, 2, 2, [ 0x00, 0xff, 0x00 ]);
@@ -84,7 +87,7 @@ describe('CopyRect decoder', function () {
             0x00, 0xff, 0x00, 255, 0x00, 0xff, 0x00, 255, 0x00, 0x00, 0xff, 255, 0x00, 0x00, 0xff, 255
         ]);
 
-        expect(done).to.be.true;
-        expect(display).to.have.displayed(targetData);
+        expect(done).toBe(true);
+        expect(display).toHaveDisplayed(targetData);
     });
 });

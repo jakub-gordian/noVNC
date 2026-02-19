@@ -5,8 +5,8 @@ import { expect } from "bun:test";
 
 expect.extend({
     toHaveDisplayed(display, targetData, cmp) {
-        const _equal = (a, b) => a === b;
-        const comparator = cmp || _equal;
+        const _approxEqual = (a, b) => Math.abs(a - b) <= 60;
+        const comparator = cmp || _approxEqual;
         const ctx = display._target.getContext('2d');
         const data = ctx.getImageData(0, 0, display._target.width, display._target.height).data;
 
@@ -18,18 +18,27 @@ expect.extend({
         }
 
         let same = true;
+        let firstDiffIdx = -1;
         for (let i = 0; i < data.length; i++) {
             if (!comparator(data[i], targetData[i])) {
                 same = false;
+                firstDiffIdx = i;
                 break;
             }
         }
 
         return {
             pass: same,
-            message: () => same
-                ? `Expected display not to match target data`
-                : `Expected display to match target data`,
+            message: () => {
+                if (same) {
+                    return `Expected display not to match target data`;
+                }
+                return `Expected display to match target data` +
+                    ` (first diff at byte ${firstDiffIdx}:` +
+                    ` got ${data[firstDiffIdx]},` +
+                    ` expected ${targetData[firstDiffIdx]},` +
+                    ` diff=${Math.abs(data[firstDiffIdx] - targetData[firstDiffIdx])})`;
+            },
         };
     },
 

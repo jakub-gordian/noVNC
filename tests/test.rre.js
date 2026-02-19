@@ -1,3 +1,6 @@
+import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
+import "./test-helpers.js";
+
 import Websock from '../core/websock.js';
 import Display from '../core/display.js';
 
@@ -45,8 +48,8 @@ describe('RRE decoder', function () {
     let decoder;
     let display;
 
-    before(FakeWebSocket.replace);
-    after(FakeWebSocket.restore);
+    beforeAll(FakeWebSocket.replace);
+    afterAll(FakeWebSocket.restore);
 
     beforeEach(function () {
         decoder = new RREDecoder();
@@ -56,7 +59,7 @@ describe('RRE decoder', function () {
 
     // TODO(directxman12): test rre_chunk_sz?
 
-    it('should handle the RRE encoding', function () {
+    test('should handle the RRE encoding', function () {
         let data = [];
         push32(data, 2); // 2 subrects
         push32(data, 0x00ff0000); // becomes 00ff0000 --> #00FF00 bg color
@@ -86,11 +89,11 @@ describe('RRE decoder', function () {
             0x00, 0xff, 0x00, 255, 0x00, 0xff, 0x00, 255, 0x00, 0x00, 0xff, 255, 0x00, 0x00, 0xff, 255
         ]);
 
-        expect(done).to.be.true;
-        expect(display).to.have.displayed(targetData);
+        expect(done).toBe(true);
+        expect(display).toHaveDisplayed(targetData);
     });
 
-    it('should handle empty rects', function () {
+    test('should handle empty rects', function () {
         display.fillRect(0, 0, 4, 4, [ 0x00, 0x00, 0xff ]);
         display.fillRect(2, 0, 2, 2, [ 0x00, 0xff, 0x00 ]);
         display.fillRect(0, 2, 2, 2, [ 0x00, 0xff, 0x00 ]);
@@ -107,7 +110,7 @@ describe('RRE decoder', function () {
             0x00, 0xff, 0x00, 255, 0x00, 0xff, 0x00, 255, 0x00, 0x00, 0xff, 255, 0x00, 0x00, 0xff, 255
         ]);
 
-        expect(done).to.be.true;
-        expect(display).to.have.displayed(targetData);
+        expect(done).toBe(true);
+        expect(display).toHaveDisplayed(targetData);
     });
 });

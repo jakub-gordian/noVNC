@@ -1,3 +1,6 @@
+import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
+import "./test-helpers.js";
+
 import Websock from '../core/websock.js';
 import Display from '../core/display.js';
 
@@ -33,8 +36,8 @@ describe('ZRLE decoder', function () {
     let decoder;
     let display;
 
-    before(FakeWebSocket.replace);
-    after(FakeWebSocket.restore);
+    beforeAll(FakeWebSocket.replace);
+    afterAll(FakeWebSocket.restore);
 
     beforeEach(function () {
         decoder = new ZRLEDecoder();
@@ -42,7 +45,7 @@ describe('ZRLE decoder', function () {
         display.resize(4, 4);
     });
 
-    it('should handle the Raw subencoding', function () {
+    test('should handle the Raw subencoding', function () {
         let done = testDecodeRect(decoder, 0, 0, 4, 4,
                                   [0x00, 0x00, 0x00, 0x0e, 0x78, 0x5e,
                                    0x62, 0x60, 0x60, 0xf8, 0x4f, 0x12,
@@ -56,11 +59,11 @@ describe('ZRLE decoder', function () {
             0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff
         ]);
 
-        expect(done).to.be.true;
-        expect(display).to.have.displayed(targetData);
+        expect(done).toBe(true);
+        expect(display).toHaveDisplayed(targetData);
     });
 
-    it('should handle the Solid subencoding', function () {
+    test('should handle the Solid subencoding', function () {
         let done = testDecodeRect(decoder, 0, 0, 4, 4,
                                   [0x00, 0x00, 0x00, 0x0c, 0x78, 0x5e,
                                    0x62, 0x64, 0x60, 0xf8, 0x0f, 0x00,
@@ -74,12 +77,12 @@ describe('ZRLE decoder', function () {
             0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff
         ]);
 
-        expect(done).to.be.true;
-        expect(display).to.have.displayed(targetData);
+        expect(done).toBe(true);
+        expect(display).toHaveDisplayed(targetData);
     });
 
 
-    it('should handle the Palette Tile subencoding', function () {
+    test('should handle the Palette Tile subencoding', function () {
         let done = testDecodeRect(decoder, 0, 0, 4, 4,
                                   [0x00, 0x00, 0x00, 0x12, 0x78, 0x5E,
                                    0x62, 0x62, 0x60,  248, 0xff, 0x9F,
@@ -94,11 +97,11 @@ describe('ZRLE decoder', function () {
             0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff
         ]);
 
-        expect(done).to.be.true;
-        expect(display).to.have.displayed(targetData);
+        expect(done).toBe(true);
+        expect(display).toHaveDisplayed(targetData);
     });
 
-    it('should handle the RLE Tile subencoding', function () {
+    test('should handle the RLE Tile subencoding', function () {
         let done = testDecodeRect(decoder, 0, 0, 4, 4,
                                   [0x00, 0x00, 0x00, 0x0d, 0x78, 0x5e,
                                    0x6a, 0x60, 0x60, 0xf8, 0x2f, 0x00,
@@ -112,11 +115,11 @@ describe('ZRLE decoder', function () {
             0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff
         ]);
 
-        expect(done).to.be.true;
-        expect(display).to.have.displayed(targetData);
+        expect(done).toBe(true);
+        expect(display).toHaveDisplayed(targetData);
     });
 
-    it('should handle the RLE Palette Tile subencoding', function () {
+    test('should handle the RLE Palette Tile subencoding', function () {
         let done = testDecodeRect(decoder, 0, 0, 4, 4,
                                   [0x00, 0x00, 0x00, 0x11, 0x78, 0x5e,
                                    0x6a, 0x62, 0x60, 0xf8, 0xff, 0x9f,
@@ -131,12 +134,12 @@ describe('ZRLE decoder', function () {
             0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0xff, 0xff
         ]);
 
-        expect(done).to.be.true;
-        expect(display).to.have.displayed(targetData);
+        expect(done).toBe(true);
+        expect(display).toHaveDisplayed(targetData);
     });
 
-    it('should fail on an invalid subencoding', function () {
+    test('should fail on an invalid subencoding', function () {
         let data = [0x00, 0x00, 0x00, 0x0c, 0x78, 0x5e, 0x6a, 0x64, 0x60, 0xf8, 0x0f, 0x00, 0x00, 0x00, 0xff, 0xff];
-        expect(() => testDecodeRect(decoder, 0, 0, 4, 4, data, display, 24)).to.throw();
+        expect(() => testDecodeRect(decoder, 0, 0, 4, 4, data, display, 24)).toThrow();
     });
 });
