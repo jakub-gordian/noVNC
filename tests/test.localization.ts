@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, spyOn } from "bun:test";
 
 import _, { Localizer, l10n } from '../app/localization.ts';

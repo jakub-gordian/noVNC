@@ -1,8 +1,9 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, spyOn } from "bun:test";
-import "./test-helpers.js";
+import "./test-helpers.ts";
 
 import Websock from '../core/websock.ts';
-import FakeWebSocket from './fake.websocket.js';
+import FakeWebSocket from './fake.websocket.ts';
 
 describe('Websock', function () {
     describe('Receive queue methods', function () {

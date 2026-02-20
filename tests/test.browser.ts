@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 
 import { isMac, isWindows, isIOS, isAndroid, isChromeOS,

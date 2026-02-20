@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, spyOn } from "bun:test";
 
 import * as WebUtil from '../app/webutil.ts';

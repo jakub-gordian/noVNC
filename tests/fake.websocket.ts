@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Base64 from '../core/base64.ts';
 
 export default class FakeWebSocket {

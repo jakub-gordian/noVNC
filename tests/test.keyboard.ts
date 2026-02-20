@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, mock, spyOn, jest } from "bun:test";
 
 import Keyboard from '../core/input/keyboard.ts';

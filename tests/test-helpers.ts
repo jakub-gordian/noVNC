@@ -1,4 +1,5 @@
-// tests/test-helpers.js
+// @ts-nocheck
+// tests/test-helpers.ts
 // Custom matchers for bun:test's expect
 
 import { expect } from "bun:test";

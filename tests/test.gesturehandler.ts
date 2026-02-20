@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, jest } from "bun:test";
 
 import EventTargetMixin from '../core/util/eventtarget.ts';

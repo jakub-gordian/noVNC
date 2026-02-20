@@ -1,5 +1,6 @@
+// @ts-nocheck
 import { describe, expect, test } from "bun:test";
-import "./test-helpers.js";
+import "./test-helpers.ts";
 import { inflateInit, inflate } from "../vendor/pako/lib/zlib/inflate.js";
 import ZStream from "../vendor/pako/lib/zlib/zstream.js";
 import Deflator from "../core/deflator.ts";

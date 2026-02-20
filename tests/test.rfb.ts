@@ -1,5 +1,6 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, spyOn, jest } from "bun:test";
-import "./test-helpers.js";
+import "./test-helpers.ts";
 
 import RFB from '../core/rfb.ts';
 import Websock from '../core/websock.ts';
@@ -11,7 +12,7 @@ import { encodeUTF8 } from '../core/util/strings.ts';
 import KeyTable from '../core/input/keysym.ts';
 import legacyCrypto from '../core/crypto/crypto.ts';
 
-import FakeWebSocket from './fake.websocket.js';
+import FakeWebSocket from './fake.websocket.ts';
 
 function push8(arr, num) {
     arr.push(num & 0xFF);

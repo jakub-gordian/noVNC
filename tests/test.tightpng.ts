@@ -1,12 +1,13 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
-import "./test-helpers.js";
+import "./test-helpers.ts";
 
 import Websock from '../core/websock.ts';
 import Display from '../core/display.ts';
 
 import TightPngDecoder from '../core/decoders/tightpng.ts';
 
-import FakeWebSocket from './fake.websocket.js';
+import FakeWebSocket from './fake.websocket.ts';
 
 function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
     let sock;

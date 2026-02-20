@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import keysyms from '../core/input/keysymdef.ts';
 import * as KeyboardUtil from "../core/input/util.ts";

@@ -1,5 +1,6 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
-import "./test-helpers.js";
+import "./test-helpers.ts";
 
 import Websock from '../core/websock.ts';
 import Display from '../core/display.ts';
@@ -9,7 +10,7 @@ import H264Decoder from '../core/decoders/h264.ts';
 import Base64 from '../core/base64.ts';
 import { supportsWebCodecsH264Decode } from '../core/util/browser.ts';
 
-import FakeWebSocket from './fake.websocket.js';
+import FakeWebSocket from './fake.websocket.ts';
 
 /* This is a 3 frame 16x16 video where the first frame is solid red, the second
  * is solid green and the third is solid blue.

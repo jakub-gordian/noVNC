@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable no-console */
 import { describe, expect, test, beforeEach, afterEach, spyOn } from "bun:test";
 

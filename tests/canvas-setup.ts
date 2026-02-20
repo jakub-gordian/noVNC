@@ -1,4 +1,5 @@
-// tests/canvas-setup.js
+// @ts-nocheck
+// tests/canvas-setup.ts
 // Canvas polyfill for bun:test environment.
 // Uses @napi-rs/canvas to provide real Canvas 2D context support
 // since happy-dom's HTMLCanvasElement.getContext() returns null.

@@ -1,5 +1,6 @@
+// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, mock, spyOn } from "bun:test";
-import "./test-helpers.js";
+import "./test-helpers.ts";
 
 import Base64 from '../core/base64.ts';
 import Display from '../core/display.ts';
