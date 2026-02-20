@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2018 The noVNC authors
@@ -11,31 +10,46 @@
  * Cross-browser event and position routines
  */
 
-export function getPointerEvent(e) {
-    return e.changedTouches ? e.changedTouches[0] : e.touches ? e.touches[0] : e;
+// Augment Document and Element with non-standard capture APIs
+declare global {
+    interface Document {
+        captureElement: Element | null;
+        releaseCapture?: () => void;
+    }
+    interface Element {
+        setCapture?: () => void;
+    }
 }
 
-export function stopEvent(e) {
+export function getPointerEvent(e: MouseEvent | TouchEvent): MouseEvent | Touch {
+    if ('changedTouches' in e) {
+        return e.changedTouches[0] || e.touches[0];
+    }
+    return e;
+}
+
+export function stopEvent(e: Event): void {
     e.stopPropagation();
     e.preventDefault();
 }
 
 // Emulate Element.setCapture() when not supported
-let _captureRecursion = false;
-let _elementForUnflushedEvents = null;
+let _captureRecursion: boolean = false;
+let _elementForUnflushedEvents: Element | null = null;
 document.captureElement = null;
-function _captureProxy(e) {
+function _captureProxy(e: Event): void {
     // Recursion protection as we'll see our own event
     if (_captureRecursion) return;
 
     // Clone the event as we cannot dispatch an already dispatched event
-    const newEv = new e.constructor(e.type, e);
+    const Ctor = e.constructor as { new(type: string, eventInitDict: object): Event };
+    const newEv = new Ctor(e.type, e);
 
     _captureRecursion = true;
     if (document.captureElement) {
         document.captureElement.dispatchEvent(newEv);
     } else {
-        _elementForUnflushedEvents.dispatchEvent(newEv);
+        _elementForUnflushedEvents!.dispatchEvent(newEv);
     }
     _captureRecursion = false;
 
@@ -54,14 +68,14 @@ function _captureProxy(e) {
 }
 
 // Follow cursor style of target element
-function _capturedElemChanged() {
-    const proxyElem = document.getElementById("noVNC_mouse_capture_elem");
-    proxyElem.style.cursor = window.getComputedStyle(document.captureElement).cursor;
+function _capturedElemChanged(): void {
+    const proxyElem = document.getElementById("noVNC_mouse_capture_elem")!;
+    proxyElem.style.cursor = window.getComputedStyle(document.captureElement!).cursor;
 }
 
 const _captureObserver = new MutationObserver(_capturedElemChanged);
 
-export function setCapture(target) {
+export function setCapture(target: Element): void {
     if (target.setCapture) {
 
         target.setCapture();
@@ -81,7 +95,7 @@ export function setCapture(target) {
             proxyElem.style.left = "0px";
             proxyElem.style.width = "100%";
             proxyElem.style.height = "100%";
-            proxyElem.style.zIndex = 10000;
+            proxyElem.style.zIndex = "10000";
             proxyElem.style.display = "none";
             document.body.appendChild(proxyElem);
 
@@ -108,7 +122,7 @@ export function setCapture(target) {
     }
 }
 
-export function releaseCapture() {
+export function releaseCapture(): void {
     if (document.releaseCapture) {
 
         document.releaseCapture();
@@ -130,7 +144,7 @@ export function releaseCapture() {
 
         _captureObserver.disconnect();
 
-        const proxyElem = document.getElementById("noVNC_mouse_capture_elem");
+        const proxyElem = document.getElementById("noVNC_mouse_capture_elem")!;
         proxyElem.style.display = "none";
 
         window.removeEventListener('mousemove', _captureProxy);
