@@ -1,8 +1,22 @@
-// @ts-nocheck
 import Base64 from "../base64.ts";
 import { modPow, bigIntToU8Array, u8ArrayToBigInt } from "./bigint.ts";
 
+interface RSAPublicKeyData {
+    n: Uint8Array;
+    e: Uint8Array;
+}
+
 export class RSACipher {
+    _keyLength: number;
+    _keyBytes: number;
+    _n: Uint8Array | null;
+    _e: Uint8Array | null;
+    _d: Uint8Array | null;
+    _nBigInt: bigint | null;
+    _eBigInt: bigint | null;
+    _dBigInt: bigint | null;
+    _extractable: boolean;
+
     constructor() {
         this._keyLength = 0;
         this._keyBytes = 0;
@@ -15,29 +29,29 @@ export class RSACipher {
         this._extractable = false;
     }
 
-    get algorithm() {
+    get algorithm(): { name: string } {
         return { name: "RSA-PKCS1-v1_5" };
     }
 
-    _base64urlDecode(data) {
+    _base64urlDecode(data: string): number[] {
         data = data.replace(/-/g, "+").replace(/_/g, "/");
         data = data.padEnd(Math.ceil(data.length / 4) * 4, "=");
         return Base64.decode(data);
     }
 
-    _padArray(arr, length) {
+    _padArray(arr: number[] | Uint8Array, length: number): Uint8Array {
         const res = new Uint8Array(length);
         res.set(arr, length - arr.length);
         return res;
     }
 
-    static async generateKey(algorithm, extractable, _keyUsages) {
+    static async generateKey(algorithm: { modulusLength: number; publicExponent: Uint8Array }, extractable: boolean, _keyUsages: string[]): Promise<{ privateKey: RSACipher }> {
         const cipher = new RSACipher;
         await cipher._generateKey(algorithm, extractable);
         return { privateKey: cipher };
     }
 
-    async _generateKey(algorithm, extractable) {
+    async _generateKey(algorithm: { modulusLength: number; publicExponent: Uint8Array }, extractable: boolean): Promise<void> {
         this._keyLength = algorithm.modulusLength;
         this._keyBytes = Math.ceil(this._keyLength / 8);
         const key = await window.crypto.subtle.generateKey(
@@ -46,19 +60,19 @@ export class RSACipher {
                 modulusLength: algorithm.modulusLength,
                 publicExponent: algorithm.publicExponent,
                 hash: {name: "SHA-256"},
-            },
+            } as RsaHashedKeyGenParams,
             true, ["encrypt", "decrypt"]);
-        const privateKey = await window.crypto.subtle.exportKey("jwk", key.privateKey);
-        this._n = this._padArray(this._base64urlDecode(privateKey.n), this._keyBytes);
+        const privateKey = await window.crypto.subtle.exportKey("jwk", (key as CryptoKeyPair).privateKey);
+        this._n = this._padArray(this._base64urlDecode(privateKey.n!), this._keyBytes);
         this._nBigInt = u8ArrayToBigInt(this._n);
-        this._e = this._padArray(this._base64urlDecode(privateKey.e), this._keyBytes);
+        this._e = this._padArray(this._base64urlDecode(privateKey.e!), this._keyBytes);
         this._eBigInt = u8ArrayToBigInt(this._e);
-        this._d = this._padArray(this._base64urlDecode(privateKey.d), this._keyBytes);
+        this._d = this._padArray(this._base64urlDecode(privateKey.d!), this._keyBytes);
         this._dBigInt = u8ArrayToBigInt(this._d);
         this._extractable = extractable;
     }
 
-    static async importKey(key, _algorithm, extractable, keyUsages) {
+    static async importKey(key: RSAPublicKeyData, _algorithm: object, extractable: boolean, keyUsages: string[]): Promise<RSACipher> {
         if (keyUsages.length !== 1 || keyUsages[0] !== "encrypt") {
             throw new Error("only support importing RSA public key");
         }
@@ -67,7 +81,7 @@ export class RSACipher {
         return cipher;
     }
 
-    async _importKey(key, extractable) {
+    async _importKey(key: RSAPublicKeyData, extractable: boolean): Promise<void> {
         const n = key.n;
         const e = key.e;
         if (n.length !== e.length) {
@@ -84,7 +98,7 @@ export class RSACipher {
         this._extractable = extractable;
     }
 
-    async encrypt(_algorithm, message) {
+    async encrypt(_algorithm: object, message: Uint8Array): Promise<Uint8Array | null> {
         if (message.length > this._keyBytes - 11) {
             return null;
         }
@@ -98,16 +112,16 @@ export class RSACipher {
         em.set(ps, 2);
         em.set(message, ps.length + 3);
         const emBigInt = u8ArrayToBigInt(em);
-        const c = modPow(emBigInt, this._eBigInt, this._nBigInt);
+        const c = modPow(emBigInt, this._eBigInt!, this._nBigInt!);
         return bigIntToU8Array(c, this._keyBytes);
     }
 
-    async decrypt(_algorithm, message) {
+    async decrypt(_algorithm: object, message: Uint8Array): Promise<Uint8Array | null> {
         if (message.length !== this._keyBytes) {
             return null;
         }
         const msgBigInt = u8ArrayToBigInt(message);
-        const emBigInt = modPow(msgBigInt, this._dBigInt, this._nBigInt);
+        const emBigInt = modPow(msgBigInt, this._dBigInt!, this._nBigInt!);
         const em = bigIntToU8Array(emBigInt, this._keyBytes);
         if (em[0] !== 0x00 || em[1] !== 0x02) {
             return null;
@@ -124,7 +138,7 @@ export class RSACipher {
         return em.slice(i + 1, em.length);
     }
 
-    async exportKey() {
+    async exportKey(): Promise<{ n: Uint8Array | null; e: Uint8Array | null; d: Uint8Array | null }> {
         if (!this._extractable) {
             throw new Error("key is not extractable");
         }

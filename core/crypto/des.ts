@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Ported from Flashlight VNC ActionScript implementation:
  *     http://www.wizhelp.com/flashlight-vnc/
@@ -130,7 +129,9 @@ const SP8 = [b|f,z|e,a|z,c|f,b|z,b|f,z|d,b|z,a|d,c|z,c|f,a|e,c|e,a|f,z|e,z|d,
 /* eslint-enable comma-spacing */
 
 class DES {
-    constructor(password) {
+    keys: number[];
+
+    constructor(password: Uint8Array) {
         this.keys = [];
 
         // Set the key.
@@ -180,8 +181,8 @@ class DES {
     }
 
     // Encrypt 8 bytes of text
-    enc8(text) {
-        const b = text.slice();
+    enc8(text: Uint8Array): Uint8Array {
+        const b = new Uint8Array(text);
         let i = 0, l, r, x; // left, right, accumulator
 
         // Squash 8 bytes to 2 ints
@@ -262,25 +263,27 @@ class DES {
 }
 
 export class DESECBCipher {
+    _cipher: DES | null;
+
     constructor() {
         this._cipher = null;
     }
 
-    get algorithm() {
+    get algorithm(): { name: string } {
         return { name: "DES-ECB" };
     }
 
-    static importKey(key, _algorithm, _extractable, _keyUsages) {
+    static importKey(key: Uint8Array, _algorithm: object, _extractable: boolean, _keyUsages: string[]): DESECBCipher {
         const cipher = new DESECBCipher;
         cipher._importKey(key);
         return cipher;
     }
 
-    _importKey(key, _extractable, _keyUsages) {
+    _importKey(key: Uint8Array): void {
         this._cipher = new DES(key);
     }
 
-    encrypt(_algorithm, plaintext) {
+    encrypt(_algorithm: object, plaintext: Uint8Array): Uint8Array | null {
         const x = new Uint8Array(plaintext);
         if (x.length % 8 !== 0 || this._cipher === null) {
             return null;
@@ -294,27 +297,29 @@ export class DESECBCipher {
 }
 
 export class DESCBCCipher {
+    _cipher: DES | null;
+
     constructor() {
         this._cipher = null;
     }
 
-    get algorithm() {
+    get algorithm(): { name: string } {
         return { name: "DES-CBC" };
     }
 
-    static importKey(key, _algorithm, _extractable, _keyUsages) {
+    static importKey(key: Uint8Array, _algorithm: object, _extractable: boolean, _keyUsages: string[]): DESCBCCipher {
         const cipher = new DESCBCCipher;
         cipher._importKey(key);
         return cipher;
     }
 
-    _importKey(key) {
+    _importKey(key: Uint8Array): void {
         this._cipher = new DES(key);
     }
 
-    encrypt(algorithm, plaintext) {
+    encrypt(algorithm: { iv: Uint8Array }, plaintext: Uint8Array): Uint8Array | null {
         const x = new Uint8Array(plaintext);
-        let y = new Uint8Array(algorithm.iv);
+        let y: Uint8Array = new Uint8Array(algorithm.iv);
         if (x.length % 8 !== 0 || this._cipher === null) {
             return null;
         }

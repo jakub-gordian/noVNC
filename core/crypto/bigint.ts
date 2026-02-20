@@ -1,5 +1,4 @@
-// @ts-nocheck
-export function modPow(b, e, m) {
+export function modPow(b: bigint, e: bigint, m: bigint): bigint {
     let r = 1n;
     b = b % m;
     while (e > 0n) {
@@ -12,7 +11,7 @@ export function modPow(b, e, m) {
     return r;
 }
 
-export function bigIntToU8Array(bigint, padLength=0) {
+export function bigIntToU8Array(bigint: bigint, padLength: number = 0): Uint8Array {
     let hex = bigint.toString(16);
     if (padLength === 0) {
         padLength = Math.ceil(hex.length / 2);
@@ -26,7 +25,7 @@ export function bigIntToU8Array(bigint, padLength=0) {
     return arr;
 }
 
-export function u8ArrayToBigInt(arr) {
+export function u8ArrayToBigInt(arr: Uint8Array): bigint {
     let hex = '0x';
     for (let i = 0; i < arr.length; i++) {
         hex += arr[i].toString(16).padStart(2, '0');

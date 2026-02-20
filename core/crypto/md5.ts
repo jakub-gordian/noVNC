@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2021 The noVNC authors
@@ -11,7 +10,7 @@
  * Performs MD5 hashing on an array of bytes, returns an array of bytes
  */
 
-export async function MD5(d) {
+export async function MD5(d: Uint8Array): Promise<Uint8Array> {
     let s = "";
     for (let i = 0; i < d.length; i++) {
         s += String.fromCharCode(d[i]);
@@ -19,7 +18,7 @@ export async function MD5(d) {
     return M(V(Y(X(s), 8 * s.length)));
 }
 
-function M(d) {
+function M(d: string): Uint8Array {
     let f = new Uint8Array(d.length);
     for (let i=0;i<d.length;i++) {
         f[i] = d.charCodeAt(i);
@@ -27,20 +26,20 @@ function M(d) {
     return f;
 }
 
-function X(d) {
+function X(d: string): number[] {
     let r = Array(d.length >> 2);
     for (let m = 0; m < r.length; m++) r[m] = 0;
     for (let m = 0; m < 8 * d.length; m += 8) r[m >> 5] |= (255 & d.charCodeAt(m / 8)) << m % 32;
     return r;
 }
 
-function V(d) {
+function V(d: number[]): string {
     let r = "";
     for (let m = 0; m < 32 * d.length; m += 8) r += String.fromCharCode(d[m >> 5] >>> m % 32 & 255);
     return r;
 }
 
-function Y(d, g) {
+function Y(d: number[], g: number): number[] {
     d[g >> 5] |= 128 << g % 32, d[14 + (g + 64 >>> 9 << 4)] = g;
     let m = 1732584193, f = -271733879, r = -1732584194, i = 271733878;
     for (let n = 0; n < d.length; n += 16) {
@@ -53,31 +52,31 @@ function Y(d, g) {
     return Array(m, f, r, i);
 }
 
-function cmn(d, g, m, f, r, i) {
+function cmn(d: number, g: number, m: number, f: number, r: number, i: number): number {
     return add(rol(add(add(g, d), add(f, i)), r), m);
 }
 
-function ff(d, g, m, f, r, i, n) {
+function ff(d: number, g: number, m: number, f: number, r: number, i: number, n: number): number {
     return cmn(g & m | ~g & f, d, g, r, i, n);
 }
 
-function gg(d, g, m, f, r, i, n) {
+function gg(d: number, g: number, m: number, f: number, r: number, i: number, n: number): number {
     return cmn(g & f | m & ~f, d, g, r, i, n);
 }
 
-function hh(d, g, m, f, r, i, n) {
+function hh(d: number, g: number, m: number, f: number, r: number, i: number, n: number): number {
     return cmn(g ^ m ^ f, d, g, r, i, n);
 }
 
-function ii(d, g, m, f, r, i, n) {
+function ii(d: number, g: number, m: number, f: number, r: number, i: number, n: number): number {
     return cmn(m ^ (g | ~f), d, g, r, i, n);
 }
 
-function add(d, g) {
+function add(d: number, g: number): number {
     let m = (65535 & d) + (65535 & g);
     return (d >> 16) + (g >> 16) + (m >> 16) << 16 | 65535 & m;
 }
 
-function rol(d, g) {
+function rol(d: number, g: number): number {
     return d << g | d >>> 32 - g;
 }
