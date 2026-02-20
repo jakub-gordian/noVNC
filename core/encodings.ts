@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -36,9 +35,9 @@ export const encodings = {
     pseudoEncodingCompressLevel0: -256,
     pseudoEncodingVMwareCursor: 0x574d5664,
     pseudoEncodingExtendedClipboard: 0xc0a1e5ce
-};
+} as const;
 
-export function encodingName(num) {
+export function encodingName(num: number): string {
     switch (num) {
         case encodings.encodingRaw:      return "Raw";
         case encodings.encodingCopyRect: return "CopyRect";

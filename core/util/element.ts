@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2020 The noVNC authors
@@ -11,9 +10,11 @@
  * HTML element utility functions
  */
 
-export function clientToElement(x, y, elem) {
+import type { Position } from '../types.ts';
+
+export function clientToElement(x: number, y: number, elem: Element): Position {
     const bounds = elem.getBoundingClientRect();
-    let pos = { x: 0, y: 0 };
+    let pos: Position = { x: 0, y: 0 };
     // Clip to target bounds
     if (x < bounds.left) {
         pos.x = 0;

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -11,14 +10,16 @@
  * Logging/debug routines
  */
 
-let _logLevel = 'warn';
+import type { LogLevel, LogFunction } from '../types.ts';
 
-let Debug = () => {};
-let Info = () => {};
-let Warn = () => {};
-let Error = () => {};
+let _logLevel: LogLevel = 'warn';
 
-export function initLogging(level) {
+let Debug: LogFunction = () => {};
+let Info: LogFunction = () => {};
+let Warn: LogFunction = () => {};
+let Error: LogFunction = () => {};
+
+export function initLogging(level?: LogLevel): void {
     if (typeof level === 'undefined') {
         level = _logLevel;
     } else {
@@ -47,7 +48,7 @@ export function initLogging(level) {
     }
 }
 
-export function getLogging() {
+export function getLogging(): LogLevel {
     return _logLevel;
 }
 
