@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2018 The noVNC authors
@@ -11,7 +10,14 @@
  * Localization utilities
  */
 
+interface Dictionary {
+    [key: string]: string;
+}
+
 export class Localizer {
+    language: string;
+    _dictionary: Dictionary | undefined;
+
     constructor() {
         // Currently configured language
         this.language = 'en';
@@ -21,7 +27,7 @@ export class Localizer {
     }
 
     // Configure suitable language based on user preferences
-    async setup(supportedLanguages, baseURL) {
+    async setup(supportedLanguages: string[], baseURL?: string): Promise<void> {
         this.language = 'en'; // Default: US English
         this._dictionary = undefined;
 
@@ -29,16 +35,16 @@ export class Localizer {
         await this._setupDictionary(baseURL);
     }
 
-    _setupLanguage(supportedLanguages) {
+    _setupLanguage(supportedLanguages: string[]): void {
         /*
          * Navigator.languages only available in Chrome (32+) and FireFox (32+)
          * Fall back to navigator.language for other browsers
          */
-        let userLanguages;
+        let userLanguages: readonly string[];
         if (typeof window.navigator.languages == 'object') {
             userLanguages = window.navigator.languages;
         } else {
-            userLanguages = [navigator.language || navigator.userLanguage];
+            userLanguages = [navigator.language];
         }
 
         for (let i = 0;i < userLanguages.length;i++) {
@@ -90,20 +96,23 @@ export class Localizer {
         }
     }
 
-    async _setupDictionary(baseURL) {
+    async _setupDictionary(baseURL?: string): Promise<void> {
+        let base: string;
         if (baseURL) {
             if (!baseURL.endsWith("/")) {
-                baseURL = baseURL + "/";
+                base = baseURL + "/";
+            } else {
+                base = baseURL;
             }
         } else {
-            baseURL = "";
+            base = "";
         }
 
         if (this.language === "en") {
             return;
         }
 
-        let response = await fetch(baseURL + this.language + ".json");
+        let response = await fetch(base + this.language + ".json");
         if (!response.ok) {
             throw Error("" + response.status + " " + response.statusText);
         }
@@ -112,7 +121,7 @@ export class Localizer {
     }
 
     // Retrieve localised text
-    get(id) {
+    get(id: string): string {
         if (typeof this._dictionary !== 'undefined' &&
             this._dictionary[id]) {
             return this._dictionary[id];
@@ -123,27 +132,27 @@ export class Localizer {
 
     // Traverses the DOM and translates relevant fields
     // See https://html.spec.whatwg.org/multipage/dom.html#attr-translate
-    translateDOM() {
+    translateDOM(): void {
         const self = this;
 
-        function process(elem, enabled) {
-            function isAnyOf(searchElement, items) {
-                return items.indexOf(searchElement) !== -1;
+        function process(elem: Element, enabled: boolean): void {
+            function isAnyOf(searchElement: string | null, items: string[]): boolean {
+                return items.indexOf(searchElement as string) !== -1;
             }
 
-            function translateString(str) {
+            function translateString(str: string): string {
                 // We assume surrounding whitespace, and whitespace around line
                 // breaks is just for source formatting
                 str = str.split("\n").map(s => s.trim()).join(" ").trim();
                 return self.get(str);
             }
 
-            function translateAttribute(elem, attr) {
-                const str = translateString(elem.getAttribute(attr));
+            function translateAttribute(elem: Element, attr: string): void {
+                const str = translateString(elem.getAttribute(attr)!);
                 elem.setAttribute(attr, str);
             }
 
-            function translateTextNode(node) {
+            function translateTextNode(node: CharacterData): void {
                 const str = translateString(node.data);
                 node.data = str;
             }
@@ -192,9 +201,9 @@ export class Localizer {
             for (let i = 0; i < elem.childNodes.length; i++) {
                 const node = elem.childNodes[i];
                 if (node.nodeType === node.ELEMENT_NODE) {
-                    process(node, enabled);
+                    process(node as Element, enabled);
                 } else if (node.nodeType === node.TEXT_NODE && enabled) {
-                    translateTextNode(node);
+                    translateTextNode(node as CharacterData);
                 }
             }
         }
@@ -203,5 +212,5 @@ export class Localizer {
     }
 }
 
-export const l10n = new Localizer();
+export const l10n: Localizer = new Localizer();
 export default l10n.get.bind(l10n);

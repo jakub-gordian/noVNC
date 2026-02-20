@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -7,8 +6,19 @@
  * See README.md for usage and integration instructions.
  */
 
+interface ErrorEventLike {
+    message: string;
+    filename?: string;
+    lineno?: number;
+    colno?: number;
+}
+
+interface ErrorWithStack {
+    stack?: string;
+}
+
 // Fallback for all uncaught errors
-function handleError(event, err) {
+function handleError(event: ErrorEventLike, err?: ErrorWithStack | null): false {
     try {
         const msg = document.getElementById('noVNC_fallback_errormsg');
 
@@ -19,7 +29,11 @@ function handleError(event, err) {
         }
 
         // Only show the initial error
-        if (msg.hasChildNodes()) {
+        if (msg && msg.hasChildNodes()) {
+            return false;
+        }
+
+        if (!msg) {
             return false;
         }
 
@@ -50,7 +64,7 @@ function handleError(event, err) {
         }
 
         document.getElementById('noVNC_fallback_error')
-            .classList.add("noVNC_open");
+            ?.classList.add("noVNC_open");
 
     } catch (exc) {
         document.write("noVNC encountered an error.");
@@ -60,11 +74,11 @@ function handleError(event, err) {
     try {
         // Remove focus from the currently focused element in order to
         // prevent keyboard interaction from continuing
-        if (document.activeElement) { document.activeElement.blur(); }
+        if (document.activeElement) { (document.activeElement as HTMLElement).blur(); }
 
         // Don't let any element be focusable when showing the error
         let keyboardFocusable = 'a[href], button, input, textarea, select, details, [tabindex]';
-        document.querySelectorAll(keyboardFocusable).forEach((elem) => {
+        document.querySelectorAll(keyboardFocusable).forEach((elem: Element) => {
             elem.setAttribute("tabindex", "-1");
         });
     } catch (exc) {
@@ -76,5 +90,5 @@ function handleError(event, err) {
     return false;
 }
 
-window.addEventListener('error', evt => handleError(evt, evt.error));
-window.addEventListener('unhandledrejection', evt => handleError(evt.reason, evt.reason));
+window.addEventListener('error', (evt: ErrorEvent) => handleError(evt, evt.error as ErrorWithStack));
+window.addEventListener('unhandledrejection', (evt: PromiseRejectionEvent) => handleError(evt.reason as ErrorEventLike, evt.reason as ErrorWithStack));
