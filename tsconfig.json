@@ -12,7 +12,8 @@
         "resolveJsonModule": true,
         "isolatedModules": true,
         "allowJs": true,
-        "checkJs": false
+        "checkJs": false,
+        "allowImportingTsExtensions": true
     },
     "include": [
         "core/**/*.ts",

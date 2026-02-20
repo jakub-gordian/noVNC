@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -7,9 +6,24 @@
 
 import { supportsCursorURIs, isTouchDevice } from './browser.ts';
 
-const useFallback = !supportsCursorURIs || isTouchDevice;
+import type { Position } from '../types.ts';
+
+const useFallback: boolean = !supportsCursorURIs || isTouchDevice;
+
+interface CursorEventHandlers {
+    mouseover: (event: MouseEvent) => void;
+    mouseleave: (event: MouseEvent) => void;
+    mousemove: (event: MouseEvent) => void;
+    mouseup: (event: MouseEvent) => void;
+}
 
 export default class Cursor {
+    _target: HTMLElement | null;
+    _canvas: HTMLCanvasElement;
+    _position: Position;
+    _hotSpot: Position;
+    _eventHandlers: CursorEventHandlers;
+
     constructor() {
         this._target = null;
 
@@ -22,7 +36,7 @@ export default class Cursor {
             // Safari on iOS can select the cursor image
             // https://bugs.webkit.org/show_bug.cgi?id=249223
             this._canvas.style.userSelect = 'none';
-            this._canvas.style.WebkitUserSelect = 'none';
+            (this._canvas.style as any).WebkitUserSelect = 'none';
             // Can't use "display" because of Firefox bug #1445997
             this._canvas.style.visibility = 'hidden';
         }
@@ -38,7 +52,7 @@ export default class Cursor {
         };
     }
 
-    attach(target) {
+    attach(target: HTMLElement): void {
         if (this._target) {
             this.detach();
         }
@@ -58,7 +72,7 @@ export default class Cursor {
         this.clear();
     }
 
-    detach() {
+    detach(): void {
         if (!this._target) {
             return;
         }
@@ -78,7 +92,7 @@ export default class Cursor {
         this._target = null;
     }
 
-    change(rgba, hotx, hoty, w, h) {
+    change(rgba: ArrayBuffer, hotx: number, hoty: number, w: number, h: number): void {
         if ((w === 0) || (h === 0)) {
             this.clear();
             return;
@@ -89,7 +103,7 @@ export default class Cursor {
         this._hotSpot.x = hotx;
         this._hotSpot.y = hoty;
 
-        let ctx = this._canvas.getContext('2d');
+        let ctx = this._canvas.getContext('2d')!;
 
         this._canvas.width = w;
         this._canvas.height = h;
@@ -102,12 +116,12 @@ export default class Cursor {
             this._updatePosition();
         } else {
             let url = this._canvas.toDataURL();
-            this._target.style.cursor = 'url(' + url + ')' + hotx + ' ' + hoty + ', default';
+            this._target!.style.cursor = 'url(' + url + ')' + hotx + ' ' + hoty + ', default';
         }
     }
 
-    clear() {
-        this._target.style.cursor = 'none';
+    clear(): void {
+        this._target!.style.cursor = 'none';
         this._canvas.width = 0;
         this._canvas.height = 0;
         this._position.x = this._position.x + this._hotSpot.x;
@@ -118,7 +132,7 @@ export default class Cursor {
 
     // Mouse events might be emulated, this allows
     // moving the cursor in such cases
-    move(clientX, clientY) {
+    move(clientX: number, clientY: number): void {
         if (!useFallback) {
             return;
         }
@@ -137,20 +151,20 @@ export default class Cursor {
         this._updateVisibility(target);
     }
 
-    _handleMouseOver(event) {
+    _handleMouseOver(event: MouseEvent): void {
         // This event could be because we're entering the target, or
         // moving around amongst its sub elements. Let the move handler
         // sort things out.
         this._handleMouseMove(event);
     }
 
-    _handleMouseLeave(event) {
+    _handleMouseLeave(event: MouseEvent): void {
         // Check if we should show the cursor on the element we are leaving to
-        this._updateVisibility(event.relatedTarget);
+        this._updateVisibility(event.relatedTarget as Element | null);
     }
 
-    _handleMouseMove(event) {
-        this._updateVisibility(event.target);
+    _handleMouseMove(event: MouseEvent): void {
+        this._updateVisibility(event.target as Element | null);
 
         this._position.x = event.clientX - this._hotSpot.x;
         this._position.y = event.clientY - this._hotSpot.y;
@@ -158,7 +172,7 @@ export default class Cursor {
         this._updatePosition();
     }
 
-    _handleMouseUp(event) {
+    _handleMouseUp(event: MouseEvent): void {
         // We might get this event because of a drag operation that
         // moved outside of the target. Check what's under the cursor
         // now and adjust visibility based on that.
@@ -189,13 +203,13 @@ export default class Cursor {
         }
     }
 
-    _showCursor() {
+    _showCursor(): void {
         if (this._canvas.style.visibility === 'hidden') {
             this._canvas.style.visibility = '';
         }
     }
 
-    _hideCursor() {
+    _hideCursor(): void {
         if (this._canvas.style.visibility !== 'hidden') {
             this._canvas.style.visibility = 'hidden';
         }
@@ -204,7 +218,7 @@ export default class Cursor {
     // Should we currently display the cursor?
     // (i.e. are we over the target, or a child of the target without a
     // different cursor set)
-    _shouldShowCursor(target) {
+    _shouldShowCursor(target: Element | null): boolean {
         if (!target) {
             return false;
         }
@@ -213,7 +227,7 @@ export default class Cursor {
             return true;
         }
         // Other part of the DOM?
-        if (!this._target.contains(target)) {
+        if (!this._target!.contains(target)) {
             return false;
         }
         // Has the child its own cursor?
@@ -225,7 +239,7 @@ export default class Cursor {
         return true;
     }
 
-    _updateVisibility(target) {
+    _updateVisibility(target: Element | null): void {
         // When the cursor target has capture we want to show the cursor.
         // So, if a capture is active - look at the captured element instead.
         if (this._captureIsActive()) {
@@ -238,13 +252,13 @@ export default class Cursor {
         }
     }
 
-    _updatePosition() {
+    _updatePosition(): void {
         this._canvas.style.left = this._position.x + "px";
         this._canvas.style.top = this._position.y + "px";
     }
 
-    _captureIsActive() {
-        return document.captureElement &&
+    _captureIsActive(): boolean {
+        return !!document.captureElement &&
             document.documentElement.contains(document.captureElement);
     }
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2020 The noVNC authors
@@ -7,10 +6,15 @@
  * See README.md for usage and integration instructions.
  */
 
+// @ts-ignore - vendor library without type declarations
 import { inflateInit, inflate, inflateReset } from "../vendor/pako/lib/zlib/inflate.js";
+// @ts-ignore - vendor library without type declarations
 import ZStream from "../vendor/pako/lib/zlib/zstream.js";
 
 export default class Inflate {
+    strm: any; // pako ZStream - vendor type
+    chunkSize: number;
+
     constructor() {
         this.strm = new ZStream();
         this.chunkSize = 1024 * 10 * 10;
@@ -19,7 +23,7 @@ export default class Inflate {
         inflateInit(this.strm);
     }
 
-    setInput(data) {
+    setInput(data: Uint8Array | null): void {
         if (!data) {
             //FIXME: flush remaining data.
             /* eslint-disable camelcase */
@@ -34,7 +38,7 @@ export default class Inflate {
         }
     }
 
-    inflate(expected) {
+    inflate(expected: number): Uint8Array {
         // resize our output buffer if it's too small
         // (we could just use multiple chunks, but that would cause an extra
         // allocation each time to flatten the chunks)
@@ -60,7 +64,7 @@ export default class Inflate {
         return new Uint8Array(this.strm.output.buffer, 0, this.strm.next_out);
     }
 
-    reset() {
+    reset(): void {
         inflateReset(this.strm);
     }
 }

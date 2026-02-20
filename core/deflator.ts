@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2020 The noVNC authors
@@ -7,11 +6,18 @@
  * See README.md for usage and integration instructions.
  */
 
+// @ts-ignore - vendor library without type declarations
 import { deflateInit, deflate } from "../vendor/pako/lib/zlib/deflate.js";
+// @ts-ignore - vendor library without type declarations
 import { Z_FULL_FLUSH, Z_DEFAULT_COMPRESSION } from "../vendor/pako/lib/zlib/deflate.js";
+// @ts-ignore - vendor library without type declarations
 import ZStream from "../vendor/pako/lib/zlib/zstream.js";
 
 export default class Deflator {
+    strm: any; // pako ZStream - vendor type
+    chunkSize: number;
+    outputBuffer: Uint8Array;
+
     constructor() {
         this.strm = new ZStream();
         this.chunkSize = 1024 * 10 * 10;
@@ -20,7 +26,7 @@ export default class Deflator {
         deflateInit(this.strm, Z_DEFAULT_COMPRESSION);
     }
 
-    deflate(inData) {
+    deflate(inData: Uint8Array): Uint8Array {
         /* eslint-disable camelcase */
         this.strm.input = inData;
         this.strm.avail_in = this.strm.input.length;
@@ -40,7 +46,7 @@ export default class Deflator {
         if (this.strm.avail_in > 0) {
             // Read chunks until done
 
-            let chunks = [outData];
+            let chunks: Uint8Array[] = [outData];
             let totalLen = outData.length;
             do {
                 /* eslint-disable camelcase */

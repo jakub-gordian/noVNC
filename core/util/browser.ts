@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -13,12 +12,12 @@ import * as Log from './logging.ts';
 import Base64 from '../base64.ts';
 
 // Touch detection
-export let isTouchDevice = ('ontouchstart' in document.documentElement) ||
+export let isTouchDevice: boolean = ('ontouchstart' in document.documentElement) ||
                                  // required for Chrome debugger
                                  (document.ontouchstart !== undefined) ||
                                  // required for MS Surface
                                  (navigator.maxTouchPoints > 0) ||
-                                 (navigator.msMaxTouchPoints > 0);
+                                 ((navigator as any).msMaxTouchPoints > 0);
 window.addEventListener('touchstart', function onFirstTouch() {
     isTouchDevice = true;
     window.removeEventListener('touchstart', onFirstTouch, false);
@@ -27,9 +26,9 @@ window.addEventListener('touchstart', function onFirstTouch() {
 
 // The goal is to find a certain physical width, the devicePixelRatio
 // brings us a bit closer but is not optimal.
-export let dragThreshold = 10 * (window.devicePixelRatio || 1);
+export let dragThreshold: number = 10 * (window.devicePixelRatio || 1);
 
-let _supportsCursorURIs = false;
+let _supportsCursorURIs: boolean = false;
 
 try {
     const target = document.createElement('canvas');
@@ -45,9 +44,9 @@ try {
     Log.Error("Data URI scheme cursor test exception: " + exc);
 }
 
-export const supportsCursorURIs = _supportsCursorURIs;
+export const supportsCursorURIs: boolean = _supportsCursorURIs;
 
-let _hasScrollbarGutter = true;
+let _hasScrollbarGutter: boolean = true;
 try {
     // Create invisible container
     const container = document.createElement('div');
@@ -64,17 +63,17 @@ try {
     const scrollbarWidth = (container.offsetWidth - child.offsetWidth);
 
     // Clean up
-    container.parentNode.removeChild(container);
+    container.parentNode!.removeChild(container);
 
     _hasScrollbarGutter = scrollbarWidth != 0;
 } catch (exc) {
     Log.Error("Scrollbar test exception: " + exc);
 }
-export const hasScrollbarGutter = _hasScrollbarGutter;
+export const hasScrollbarGutter: boolean = _hasScrollbarGutter;
 
-export let supportsWebCodecsH264Decode = false;
+export let supportsWebCodecsH264Decode: boolean = false;
 
-async function _checkWebCodecsH264DecodeSupport() {
+async function _checkWebCodecsH264DecodeSupport(): Promise<boolean> {
     if (!('VideoDecoder' in window)) {
         return false;
     }
@@ -115,11 +114,11 @@ async function _checkWebCodecsH264DecodeSupport() {
         'PTE6MS4wMACAAAABZYiEBrxmKAAPVccAAS044AA5DRJMnkycJk4TPw=='));
 
     let gotframe = false;
-    let error = null;
+    let error: unknown = null;
 
     let decoder = new VideoDecoder({
-        output: (frame) => { gotframe = true; frame.close(); },
-        error: (e) => { error = e; },
+        output: (frame: VideoFrame) => { gotframe = true; frame.close(); },
+        error: (e: DOMException) => { error = e; },
     });
     let chunk = new EncodedVideoChunk({
         timestamp: 0,
@@ -161,74 +160,74 @@ supportsWebCodecsH264Decode = await _checkWebCodecsH264DecodeSupport();
 
 /* OS */
 
-export function isMac() {
+export function isMac(): boolean {
     return !!(/mac/i).exec(navigator.platform);
 }
 
-export function isWindows() {
+export function isWindows(): boolean {
     return !!(/win/i).exec(navigator.platform);
 }
 
-export function isIOS() {
+export function isIOS(): boolean {
     return (!!(/ipad/i).exec(navigator.platform) ||
             !!(/iphone/i).exec(navigator.platform) ||
             !!(/ipod/i).exec(navigator.platform));
 }
 
-export function isAndroid() {
+export function isAndroid(): boolean {
     /* Android sets navigator.platform to Linux :/ */
     return !!navigator.userAgent.match('Android ');
 }
 
-export function isChromeOS() {
+export function isChromeOS(): boolean {
     /* ChromeOS sets navigator.platform to Linux :/ */
     return !!navigator.userAgent.match(' CrOS ');
 }
 
 /* Browser */
 
-export function isSafari() {
+export function isSafari(): boolean {
     return !!navigator.userAgent.match('Safari/...') &&
            !navigator.userAgent.match('Chrome/...') &&
            !navigator.userAgent.match('Chromium/...') &&
            !navigator.userAgent.match('Epiphany/...');
 }
 
-export function isFirefox() {
+export function isFirefox(): boolean {
     return !!navigator.userAgent.match('Firefox/...') &&
            !navigator.userAgent.match('Seamonkey/...');
 }
 
-export function isChrome() {
+export function isChrome(): boolean {
     return !!navigator.userAgent.match('Chrome/...') &&
            !navigator.userAgent.match('Chromium/...') &&
            !navigator.userAgent.match('Edg/...') &&
            !navigator.userAgent.match('OPR/...');
 }
 
-export function isChromium() {
+export function isChromium(): boolean {
     return !!navigator.userAgent.match('Chromium/...');
 }
 
-export function isOpera() {
+export function isOpera(): boolean {
     return !!navigator.userAgent.match('OPR/...');
 }
 
-export function isEdge() {
+export function isEdge(): boolean {
     return !!navigator.userAgent.match('Edg/...');
 }
 
 /* Engine */
 
-export function isGecko() {
+export function isGecko(): boolean {
     return !!navigator.userAgent.match('Gecko/...');
 }
 
-export function isWebKit() {
+export function isWebKit(): boolean {
     return !!navigator.userAgent.match('AppleWebKit/...') &&
            !navigator.userAgent.match('Chrome/...');
 }
 
-export function isBlink() {
+export function isBlink(): boolean {
     return !!navigator.userAgent.match('Chrome/...');
 }

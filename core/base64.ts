@@ -1,4 +1,3 @@
-// @ts-nocheck
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -12,7 +11,7 @@ export default {
     toBase64Table: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='.split(''),
     base64Pad: '=',
 
-    encode(data) {
+    encode(data: ArrayLike<number>): string {
         "use strict";
         let result = '';
         const length = data.length;
@@ -57,7 +56,7 @@ export default {
     ],
     /* eslint-enable comma-spacing */
 
-    decode(data, offset = 0) {
+    decode(data: string, offset: number = 0): number[] {
         let dataLength = data.indexOf('=') - offset;
         if (dataLength < 0) { dataLength = data.length - offset; }
 
