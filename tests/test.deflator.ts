@@ -1,16 +1,15 @@
-// @ts-nocheck
 import { describe, expect, test } from "bun:test";
 import "./test-helpers.ts";
 import { inflateInit, inflate } from "../vendor/pako/lib/zlib/inflate.js";
 import ZStream from "../vendor/pako/lib/zlib/zstream.js";
 import Deflator from "../core/deflator.ts";
 
-function _inflator(compText, expected) {
+function _inflator(compText: Uint8Array, expected: any) {
     let strm = new ZStream();
     let chunkSize = 1024 * 10 * 10;
     strm.output = new Uint8Array(chunkSize);
 
-    inflateInit(strm, 5);
+    (inflateInit as any)(strm, 5);
 
     if (expected > chunkSize) {
         chunkSize = expected;

@@ -1,14 +1,13 @@
-// @ts-nocheck
 // tests/test-helpers.ts
 // Custom matchers for bun:test's expect
 
 import { expect } from "bun:test";
 
 expect.extend({
-    toHaveDisplayed(display, targetData, cmp) {
-        const _approxEqual = (a, b) => Math.abs(a - b) <= 60;
+    toHaveDisplayed(display: any, targetData: ArrayLike<number>, cmp?: (a: number, b: number) => boolean) {
+        const _approxEqual = (a: number, b: number): boolean => Math.abs(a - b) <= 60;
         const comparator = cmp || _approxEqual;
-        const ctx = display._target.getContext('2d');
+        const ctx = display._target.getContext('2d') as CanvasRenderingContext2D;
         const data = ctx.getImageData(0, 0, display._target.width, display._target.height).data;
 
         if (data.length !== targetData.length) {
@@ -43,7 +42,7 @@ expect.extend({
         };
     },
 
-    toHaveSent(rfb, targetData) {
+    toHaveSent(rfb: any, targetData: ArrayLike<number>) {
         const data = rfb._websocket._getSentData();
         let same = true;
         if (data.length !== targetData.length) {
@@ -65,13 +64,14 @@ expect.extend({
         };
     },
 
-    toEqualArray(received, expected) {
+    toEqualArray(received: unknown, expected: ArrayLike<number>) {
+        const arr = received as ArrayLike<number>;
         let same = true;
-        if (received.length !== expected.length) {
+        if (arr.length !== expected.length) {
             same = false;
         } else {
-            for (let i = 0; i < received.length; i++) {
-                if (received[i] !== expected[i]) {
+            for (let i = 0; i < arr.length; i++) {
+                if (arr[i] !== expected[i]) {
                     same = false;
                     break;
                 }

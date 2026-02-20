@@ -1,49 +1,48 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, spyOn } from "bun:test";
 
 import * as WebUtil from '../app/webutil.ts';
 
 describe('WebUtil', function () {
     describe('config variables', function () {
-        let origHref;
+        let origHref: string;
         beforeEach(function () {
             origHref = location.href;
         });
         afterEach(function () {
-            window.happyDOM.setURL(origHref);
+            (window as any).happyDOM.setURL(origHref);
         });
 
         test('should parse query string variables', function () {
-            window.happyDOM.setURL("http://example.com/test?myvar=myval");
+            (window as any).happyDOM.setURL("http://example.com/test?myvar=myval");
             expect(WebUtil.getConfigVar("myvar")).toBe("myval");
         });
         test('should return default value when no query match', function () {
-            window.happyDOM.setURL("http://example.com/test?myvar=myval");
+            (window as any).happyDOM.setURL("http://example.com/test?myvar=myval");
             expect(WebUtil.getConfigVar("other", "def")).toBe("def");
         });
         test('should handle no query match and no default value', function () {
-            window.happyDOM.setURL("http://example.com/test?myvar=myval");
+            (window as any).happyDOM.setURL("http://example.com/test?myvar=myval");
             expect(WebUtil.getConfigVar("other")).toBe(null);
         });
         test('should parse fragment variables', function () {
-            window.happyDOM.setURL("http://example.com/test#myvar=myval");
+            (window as any).happyDOM.setURL("http://example.com/test#myvar=myval");
             expect(WebUtil.getConfigVar("myvar")).toBe("myval");
         });
         test('should return default value when no fragment match', function () {
-            window.happyDOM.setURL("http://example.com/test#myvar=myval");
+            (window as any).happyDOM.setURL("http://example.com/test#myvar=myval");
             expect(WebUtil.getConfigVar("other", "def")).toBe("def");
         });
         test('should handle no fragment match and no default value', function () {
-            window.happyDOM.setURL("http://example.com/test#myvar=myval");
+            (window as any).happyDOM.setURL("http://example.com/test#myvar=myval");
             expect(WebUtil.getConfigVar("other")).toBe(null);
         });
         test('should handle both query and fragment', function () {
-            window.happyDOM.setURL("http://example.com/test?myquery=1#myhash=2");
+            (window as any).happyDOM.setURL("http://example.com/test?myquery=1#myhash=2");
             expect(WebUtil.getConfigVar("myquery")).toBe("1");
             expect(WebUtil.getConfigVar("myhash")).toBe("2");
         });
         test('should prioritize fragment if both provide same var', function () {
-            window.happyDOM.setURL("http://example.com/test?myvar=1#myvar=2");
+            (window as any).happyDOM.setURL("http://example.com/test?myvar=1#myvar=2");
             expect(WebUtil.getConfigVar("myvar")).toBe("2");
         });
     });
@@ -55,16 +54,16 @@ describe('WebUtil', function () {
     describe('settings', function () {
 
         describe('localStorage', function () {
-            let chrome;
+            let chrome: typeof window.chrome;
             beforeAll(function () {
                 chrome = window.chrome;
-                window.chrome = null;
+                window.chrome = undefined;
             });
             afterAll(function () {
                 window.chrome = chrome;
             });
 
-            let origLocalStorage;
+            let origLocalStorage: PropertyDescriptor | undefined;
             beforeEach(function () {
                 origLocalStorage = Object.getOwnPropertyDescriptor(window, "localStorage");
 
@@ -77,7 +76,7 @@ describe('WebUtil', function () {
                 return WebUtil.initSettings();
             });
             afterEach(function () {
-                Object.defineProperty(window, "localStorage", origLocalStorage);
+                Object.defineProperty(window, "localStorage", origLocalStorage!);
             });
 
             describe('writeSetting', function () {
@@ -167,14 +166,14 @@ describe('WebUtil', function () {
         });
 
         describe('chrome.storage', function () {
-            let chrome;
-            let settings = {};
+            let chrome: typeof window.chrome;
+            let settings: Record<string, string> = {};
             beforeAll(function () {
                 chrome = window.chrome;
                 window.chrome = {
                     storage: {
                         sync: {
-                            get(cb) { cb(settings); },
+                            get(cb: (items: Record<string, string>) => void) { cb(settings); },
                             set() {},
                             remove() {}
                         }
@@ -185,11 +184,12 @@ describe('WebUtil', function () {
                 window.chrome = chrome;
             });
 
-            let setSpy, removeSpy;
+            let setSpy: ReturnType<typeof spyOn>;
+            let removeSpy: ReturnType<typeof spyOn>;
             beforeEach(function () {
                 settings = {};
-                setSpy = spyOn(window.chrome.storage.sync, 'set');
-                removeSpy = spyOn(window.chrome.storage.sync, 'remove');
+                setSpy = spyOn(window.chrome!.storage!.sync, 'set');
+                removeSpy = spyOn(window.chrome!.storage!.sync, 'remove');
                 return WebUtil.initSettings();
             });
             afterEach(function () {

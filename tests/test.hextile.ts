@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
 import "./test-helpers.ts";
 
@@ -9,8 +8,8 @@ import HextileDecoder from '../core/decoders/hextile.ts';
 
 import FakeWebSocket from './fake.websocket.ts';
 
-function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
-    let sock;
+function testDecodeRect(decoder: HextileDecoder, x: number, y: number, width: number, height: number, data: number[], display: Display, depth: number): boolean {
+    let sock: Websock;
     let done = false;
 
     sock = new Websock;
@@ -25,7 +24,7 @@ function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
     if (data.length === 0) {
         done = decoder.decodeRect(x, y, width, height, sock, display, depth);
     } else {
-        sock._websocket._receiveData(new Uint8Array(data));
+        (sock as any)._websocket._receiveData(new Uint8Array(data));
     }
 
     display.flip();
@@ -33,7 +32,7 @@ function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
     return done;
 }
 
-function push32(arr, num) {
+function push32(arr: number[], num: number): void {
     arr.push((num >> 24) & 0xFF,
              (num >> 16) & 0xFF,
              (num >>  8) & 0xFF,
@@ -41,8 +40,8 @@ function push32(arr, num) {
 }
 
 describe('Hextile decoder', function () {
-    let decoder;
-    let display;
+    let decoder: HextileDecoder;
+    let display: Display;
 
     beforeAll(FakeWebSocket.replace);
     afterAll(FakeWebSocket.restore);
@@ -54,7 +53,7 @@ describe('Hextile decoder', function () {
     });
 
     test('should handle a tile with fg, bg specified, normal subrects', function () {
-        let data = [];
+        let data: number[] = [];
         data.push(0x02 | 0x04 | 0x08); // bg spec, fg spec, anysubrects
         push32(data, 0x00ff0000); // becomes 00ff0000 --> #00FF00 bg color
         data.push(0x00); // becomes 0000ff00 --> #0000FF fg color
@@ -77,7 +76,7 @@ describe('Hextile decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 
     test('should handle a raw tile', function () {
@@ -88,7 +87,7 @@ describe('Hextile decoder', function () {
             0x00, 0xff, 0x00, 255, 0x00, 0xff, 0x00, 255, 0x00, 0x00, 0xff, 255, 0x00, 0x00, 0xff, 255
         ]);
 
-        let data = [];
+        let data: number[] = [];
         data.push(0x01); // raw
         for (let i = 0; i < targetData.length; i += 4) {
             data.push(targetData[i]);
@@ -101,30 +100,30 @@ describe('Hextile decoder', function () {
         let done = testDecodeRect(decoder, 0, 0, 4, 4, data, display, 24);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 
     test('should handle a tile with only bg specified (solid bg)', function () {
-        let data = [];
+        let data: number[] = [];
         data.push(0x02);
         push32(data, 0x00ff0000); // becomes 00ff0000 --> #00FF00 bg color
 
         let done = testDecodeRect(decoder, 0, 0, 4, 4, data, display, 24);
 
-        let expected = [];
+        let expected: number[] = [];
         for (let i = 0; i < 16; i++) {
             push32(expected, 0x00ff00ff);
         }
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(new Uint8Array(expected));
+        (expect(display) as any).toHaveDisplayed(new Uint8Array(expected));
     });
 
     test('should handle a tile with only bg specified and an empty frame afterwards', function () {
         // set the width so we can have two tiles
         display.resize(8, 4);
 
-        let data = [];
+        let data: number[] = [];
 
         // send a bg frame
         data.push(0x02);
@@ -135,7 +134,7 @@ describe('Hextile decoder', function () {
 
         let done = testDecodeRect(decoder, 0, 0, 32, 4, data, display, 24);
 
-        let expected = [];
+        let expected: number[] = [];
         for (let i = 0; i < 16; i++) {
             push32(expected, 0x00ff00ff);     // rect 1: solid
         }
@@ -144,11 +143,11 @@ describe('Hextile decoder', function () {
         }
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(new Uint8Array(expected));
+        (expect(display) as any).toHaveDisplayed(new Uint8Array(expected));
     });
 
     test('should handle a tile with bg and coloured subrects', function () {
-        let data = [];
+        let data: number[] = [];
         data.push(0x02 | 0x08 | 0x10); // bg spec, anysubrects, colouredsubrects
         push32(data, 0x00ff0000); // becomes 00ff0000 --> #00FF00 bg color
         data.push(2); // 2 subrects
@@ -175,13 +174,13 @@ describe('Hextile decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 
     test('should carry over fg and bg colors from the previous tile if not specified', function () {
         display.resize(4, 17);
 
-        let data = [];
+        let data: number[] = [];
         data.push(0x02 | 0x04 | 0x08); // bg spec, fg spec, anysubrects
         push32(data, 0xff00ff); // becomes 00ff00ff --> #00FF00 bg color
         data.push(0x00); // becomes 0000ffff --> #0000FF fg color
@@ -209,14 +208,14 @@ describe('Hextile decoder', function () {
             0x00, 0xff, 0x00, 255, 0x00, 0xff, 0x00, 255, 0x00, 0x00, 0xff, 255, 0x00, 0x00, 0xff, 255
         ];
 
-        let expected = [];
+        let expected: number[] = [];
         for (let i = 0; i < 4; i++) {
             expected = expected.concat(targetData);
         }
         expected = expected.concat(targetData.slice(0, 16));
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(new Uint8Array(expected));
+        (expect(display) as any).toHaveDisplayed(new Uint8Array(expected));
     });
 
     test('should fail on an invalid subencoding', function () {
@@ -239,6 +238,6 @@ describe('Hextile decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 });

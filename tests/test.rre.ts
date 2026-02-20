@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
 import "./test-helpers.ts";
 
@@ -9,8 +8,8 @@ import RREDecoder from '../core/decoders/rre.ts';
 
 import FakeWebSocket from './fake.websocket.ts';
 
-function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
-    let sock;
+function testDecodeRect(decoder: RREDecoder, x: number, y: number, width: number, height: number, data: number[], display: Display, depth: number): boolean {
+    let sock: Websock;
     let done = false;
 
     sock = new Websock;
@@ -25,7 +24,7 @@ function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
     if (data.length === 0) {
         done = decoder.decodeRect(x, y, width, height, sock, display, depth);
     } else {
-        sock._websocket._receiveData(new Uint8Array(data));
+        (sock as any)._websocket._receiveData(new Uint8Array(data));
     }
 
     display.flip();
@@ -33,12 +32,12 @@ function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
     return done;
 }
 
-function push16(arr, num) {
+function push16(arr: number[], num: number): void {
     arr.push((num >> 8) & 0xFF,
              num & 0xFF);
 }
 
-function push32(arr, num) {
+function push32(arr: number[], num: number): void {
     arr.push((num >> 24) & 0xFF,
              (num >> 16) & 0xFF,
              (num >>  8) & 0xFF,
@@ -46,8 +45,8 @@ function push32(arr, num) {
 }
 
 describe('RRE decoder', function () {
-    let decoder;
-    let display;
+    let decoder: RREDecoder;
+    let display: Display;
 
     beforeAll(FakeWebSocket.replace);
     afterAll(FakeWebSocket.restore);
@@ -61,7 +60,7 @@ describe('RRE decoder', function () {
     // TODO(directxman12): test rre_chunk_sz?
 
     test('should handle the RRE encoding', function () {
-        let data = [];
+        let data: number[] = [];
         push32(data, 2); // 2 subrects
         push32(data, 0x00ff0000); // becomes 00ff0000 --> #00FF00 bg color
         data.push(0x00); // becomes 0000ff00 --> #0000FF fg color
@@ -91,7 +90,7 @@ describe('RRE decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 
     test('should handle empty rects', function () {
@@ -112,6 +111,6 @@ describe('RRE decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 });

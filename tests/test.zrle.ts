@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
 import "./test-helpers.ts";
 
@@ -9,8 +8,8 @@ import ZRLEDecoder from '../core/decoders/zrle.ts';
 
 import FakeWebSocket from './fake.websocket.ts';
 
-function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
-    let sock;
+function testDecodeRect(decoder: ZRLEDecoder, x: number, y: number, width: number, height: number, data: number[], display: Display, depth: number): boolean {
+    let sock: Websock;
     let done = false;
 
     sock = new Websock;
@@ -25,7 +24,7 @@ function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
     if (data.length === 0) {
         done = decoder.decodeRect(x, y, width, height, sock, display, depth);
     } else {
-        sock._websocket._receiveData(new Uint8Array(data));
+        (sock as any)._websocket._receiveData(new Uint8Array(data));
     }
 
     display.flip();
@@ -34,8 +33,8 @@ function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
 }
 
 describe('ZRLE decoder', function () {
-    let decoder;
-    let display;
+    let decoder: ZRLEDecoder;
+    let display: Display;
 
     beforeAll(FakeWebSocket.replace);
     afterAll(FakeWebSocket.restore);
@@ -61,7 +60,7 @@ describe('ZRLE decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 
     test('should handle the Solid subencoding', function () {
@@ -79,7 +78,7 @@ describe('ZRLE decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 
 
@@ -99,7 +98,7 @@ describe('ZRLE decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 
     test('should handle the RLE Tile subencoding', function () {
@@ -117,7 +116,7 @@ describe('ZRLE decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 
     test('should handle the RLE Palette Tile subencoding', function () {
@@ -136,7 +135,7 @@ describe('ZRLE decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 
     test('should fail on an invalid subencoding', function () {

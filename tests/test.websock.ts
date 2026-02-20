@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, spyOn } from "bun:test";
 import "./test-helpers.ts";
 
@@ -7,11 +6,11 @@ import FakeWebSocket from './fake.websocket.ts';
 
 describe('Websock', function () {
     describe('Receive queue methods', function () {
-        let sock, websock;
+        let sock: any, websock: any;
 
         beforeEach(function () {
             sock = new Websock();
-            websock = new FakeWebSocket();
+            websock = new FakeWebSocket('ws://localhost');
             websock._open();
             sock.attach(websock);
         });
@@ -148,15 +147,15 @@ describe('Websock', function () {
     });
 
     describe('Send queue methods', function () {
-        let sock;
+        let sock: any;
 
         const bufferSize = 10 * 1024;
 
         beforeEach(function () {
-            let websock = new FakeWebSocket();
+            let websock = new FakeWebSocket('ws://localhost');
             websock._open();
             sock = new Websock();
-            sock.attach(websock);
+            sock.attach(websock as any);
         });
 
         describe('sQpush8()', function () {
@@ -339,17 +338,17 @@ describe('Websock', function () {
     });
 
     describe('lifecycle methods', function () {
-        let oldWS;
+        let oldWS: any;
         beforeAll(function () {
             oldWS = WebSocket;
         });
 
-        let sock;
-        let wsSpy;
+        let sock: any;
+        let wsSpy: any;
         beforeEach(function () {
             sock = new Websock();
             // We need to replace the global WebSocket with a spy that wraps FakeWebSocket
-            wsSpy = mock((...args) => new FakeWebSocket(...args));
+            wsSpy = mock((...args: any[]) => new (FakeWebSocket as any)(...args));
             globalThis.WebSocket = wsSpy;
             // Copy static properties
             wsSpy.OPEN = FakeWebSocket.OPEN;
@@ -456,7 +455,7 @@ describe('Websock', function () {
 
             test('should be "connecting" if WebSocket is connecting', function () {
                 let sock = new Websock();
-                let ws = new FakeWebSocket();
+                let ws: any = new FakeWebSocket('ws://localhost');
                 ws.readyState = WebSocket.CONNECTING;
                 sock.attach(ws);
                 expect(sock.readyState).toBe('connecting');
@@ -464,7 +463,7 @@ describe('Websock', function () {
 
             test('should be "open" if WebSocket is open', function () {
                 let sock = new Websock();
-                let ws = new FakeWebSocket();
+                let ws: any = new FakeWebSocket('ws://localhost');
                 ws.readyState = WebSocket.OPEN;
                 sock.attach(ws);
                 expect(sock.readyState).toBe('open');
@@ -472,7 +471,7 @@ describe('Websock', function () {
 
             test('should be "closing" if WebSocket is closing', function () {
                 let sock = new Websock();
-                let ws = new FakeWebSocket();
+                let ws: any = new FakeWebSocket('ws://localhost');
                 ws.readyState = WebSocket.CLOSING;
                 sock.attach(ws);
                 expect(sock.readyState).toBe('closing');
@@ -480,7 +479,7 @@ describe('Websock', function () {
 
             test('should be "closed" if WebSocket is closed', function () {
                 let sock = new Websock();
-                let ws = new FakeWebSocket();
+                let ws: any = new FakeWebSocket('ws://localhost');
                 ws.readyState = WebSocket.CLOSED;
                 sock.attach(ws);
                 expect(sock.readyState).toBe('closed');
@@ -488,7 +487,7 @@ describe('Websock', function () {
 
             test('should be "unknown" if WebSocket state is unknown', function () {
                 let sock = new Websock();
-                let ws = new FakeWebSocket();
+                let ws: any = new FakeWebSocket('ws://localhost');
                 ws.readyState = 666;
                 sock.attach(ws);
                 expect(sock.readyState).toBe('unknown');
@@ -496,7 +495,7 @@ describe('Websock', function () {
 
             test('should be "connecting" if RTCDataChannel is connecting', function () {
                 let sock = new Websock();
-                let ws = new FakeWebSocket();
+                let ws: any = new FakeWebSocket('ws://localhost');
                 ws.readyState = 'connecting';
                 sock.attach(ws);
                 expect(sock.readyState).toBe('connecting');
@@ -504,7 +503,7 @@ describe('Websock', function () {
 
             test('should be "open" if RTCDataChannel is open', function () {
                 let sock = new Websock();
-                let ws = new FakeWebSocket();
+                let ws: any = new FakeWebSocket('ws://localhost');
                 ws.readyState = 'open';
                 sock.attach(ws);
                 expect(sock.readyState).toBe('open');
@@ -512,7 +511,7 @@ describe('Websock', function () {
 
             test('should be "closing" if RTCDataChannel is closing', function () {
                 let sock = new Websock();
-                let ws = new FakeWebSocket();
+                let ws: any = new FakeWebSocket('ws://localhost');
                 ws.readyState = 'closing';
                 sock.attach(ws);
                 expect(sock.readyState).toBe('closing');
@@ -520,7 +519,7 @@ describe('Websock', function () {
 
             test('should be "closed" if RTCDataChannel is closed', function () {
                 let sock = new Websock();
-                let ws = new FakeWebSocket();
+                let ws: any = new FakeWebSocket('ws://localhost');
                 ws.readyState = 'closed';
                 sock.attach(ws);
                 expect(sock.readyState).toBe('closed');
@@ -528,7 +527,7 @@ describe('Websock', function () {
 
             test('should be "unknown" if RTCDataChannel state is unknown', function () {
                 let sock = new Websock();
-                let ws = new FakeWebSocket();
+                let ws: any = new FakeWebSocket('ws://localhost');
                 ws.readyState = 'foobar';
                 sock.attach(ws);
                 expect(sock.readyState).toBe('unknown');
@@ -542,7 +541,7 @@ describe('Websock', function () {
     });
 
     describe('WebSocket receiving', function () {
-        let sock;
+        let sock: any;
         beforeEach(function () {
             sock = new Websock();
             sock._allocateBuffers();

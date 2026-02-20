@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 
 import { isMac, isWindows, isIOS, isAndroid, isChromeOS,
@@ -6,7 +5,7 @@ import { isMac, isWindows, isIOS, isAndroid, isChromeOS,
          isGecko, isWebKit, isBlink } from '../core/util/browser.ts';
 
 describe('OS detection', function () {
-    let origNavigator;
+    let origNavigator: PropertyDescriptor | undefined;
     beforeEach(function () {
         // window.navigator is a protected read-only property in many
         // environments, so we need to redefine it whilst running these
@@ -17,7 +16,7 @@ describe('OS detection', function () {
     });
 
     afterEach(function () {
-        Object.defineProperty(window, "navigator", origNavigator);
+        Object.defineProperty(window, "navigator", origNavigator!);
     });
 
     test('should handle macOS', function () {
@@ -26,9 +25,9 @@ describe('OS detection', function () {
             "MacPPC",
         ];
 
-        navigator.userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Safari/605.1.15";
+        (navigator as any).userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Safari/605.1.15";
         platforms.forEach((platform) => {
-            navigator.platform = platform;
+            (navigator as any).platform = platform;
             expect(isMac()).toBe(true);
             expect(isWindows()).toBe(false);
             expect(isIOS()).toBe(false);
@@ -43,9 +42,9 @@ describe('OS detection', function () {
             "Win64",
         ];
 
-        navigator.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36";
+        (navigator as any).userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36";
         platforms.forEach((platform) => {
-            navigator.platform = platform;
+            (navigator as any).platform = platform;
             expect(isMac()).toBe(false);
             expect(isWindows()).toBe(true);
             expect(isIOS()).toBe(false);
@@ -61,9 +60,9 @@ describe('OS detection', function () {
             "iPad",
         ];
 
-        navigator.userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1";
+        (navigator as any).userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Mobile/15E148 Safari/604.1";
         platforms.forEach((platform) => {
-            navigator.platform = platform;
+            (navigator as any).platform = platform;
             expect(isMac()).toBe(false);
             expect(isWindows()).toBe(false);
             expect(isIOS()).toBe(true);
@@ -78,9 +77,9 @@ describe('OS detection', function () {
             "Mozilla/5.0 (Android 13; Mobile; LG-M255; rv:108.0) Gecko/108.0 Firefox/108.0",
         ];
 
-        navigator.platform = "Linux x86_64";
+        (navigator as any).platform = "Linux x86_64";
         userAgents.forEach((ua) => {
-            navigator.userAgent = ua;
+            (navigator as any).userAgent = ua;
             expect(isMac()).toBe(false);
             expect(isWindows()).toBe(false);
             expect(isIOS()).toBe(false);
@@ -95,9 +94,9 @@ describe('OS detection', function () {
             "Mozilla/5.0 (X11; CrOS aarch64 15183.59.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.5359.75 Safari/537.36",
         ];
 
-        navigator.platform = "Linux x86_64";
+        (navigator as any).platform = "Linux x86_64";
         userAgents.forEach((ua) => {
-            navigator.userAgent = ua;
+            (navigator as any).userAgent = ua;
             expect(isMac()).toBe(false);
             expect(isWindows()).toBe(false);
             expect(isIOS()).toBe(false);
@@ -108,7 +107,7 @@ describe('OS detection', function () {
 });
 
 describe('Browser detection', function () {
-    let origNavigator;
+    let origNavigator: PropertyDescriptor | undefined;
     beforeEach(function () {
         // window.navigator is a protected read-only property in many
         // environments, so we need to redefine it whilst running these
@@ -119,11 +118,11 @@ describe('Browser detection', function () {
     });
 
     afterEach(function () {
-        Object.defineProperty(window, "navigator", origNavigator);
+        Object.defineProperty(window, "navigator", origNavigator!);
     });
 
     test('should handle Chrome', function () {
-        navigator.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36";
+        (navigator as any).userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36";
 
         expect(isSafari()).toBe(false);
         expect(isFirefox()).toBe(false);
@@ -138,7 +137,7 @@ describe('Browser detection', function () {
     });
 
     test('should handle Chromium', function () {
-        navigator.userAgent = "Mozilla/5.0 (X11; Linux armv7l) AppleWebKit/537.36 (KHTML, like Gecko) Raspbian Chromium/74.0.3729.157 Chrome/74.0.3729.157 Safari/537.36";
+        (navigator as any).userAgent = "Mozilla/5.0 (X11; Linux armv7l) AppleWebKit/537.36 (KHTML, like Gecko) Raspbian Chromium/74.0.3729.157 Chrome/74.0.3729.157 Safari/537.36";
 
         expect(isSafari()).toBe(false);
         expect(isFirefox()).toBe(false);
@@ -153,7 +152,7 @@ describe('Browser detection', function () {
     });
 
     test('should handle Firefox', function () {
-        navigator.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0";
+        (navigator as any).userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0";
 
         expect(isSafari()).toBe(false);
         expect(isFirefox()).toBe(true);
@@ -168,7 +167,7 @@ describe('Browser detection', function () {
     });
 
     test('should handle Seamonkey', function () {
-        navigator.userAgent = "Mozilla/5.0 (Windows NT 6.1; rv:36.0) Gecko/20100101 Firefox/36.0 Seamonkey/2.33.1";
+        (navigator as any).userAgent = "Mozilla/5.0 (Windows NT 6.1; rv:36.0) Gecko/20100101 Firefox/36.0 Seamonkey/2.33.1";
 
         expect(isSafari()).toBe(false);
         expect(isFirefox()).toBe(false);
@@ -183,7 +182,7 @@ describe('Browser detection', function () {
     });
 
     test('should handle Safari', function () {
-        navigator.userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Safari/605.1.15";
+        (navigator as any).userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 12_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Safari/605.1.15";
 
         expect(isSafari()).toBe(true);
         expect(isFirefox()).toBe(false);
@@ -198,7 +197,7 @@ describe('Browser detection', function () {
     });
 
     test('should handle Edge', function () {
-        navigator.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36 Edg/106.0.1370.34";
+        (navigator as any).userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36 Edg/106.0.1370.34";
 
         expect(isSafari()).toBe(false);
         expect(isFirefox()).toBe(false);
@@ -213,7 +212,7 @@ describe('Browser detection', function () {
     });
 
     test('should handle Opera', function () {
-        navigator.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36 OPR/91.0.4516.20";
+        (navigator as any).userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/106.0.0.0 Safari/537.36 OPR/91.0.4516.20";
 
         expect(isSafari()).toBe(false);
         expect(isFirefox()).toBe(false);
@@ -228,7 +227,7 @@ describe('Browser detection', function () {
     });
 
     test('should handle Epiphany', function () {
-        navigator.userAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0 Safari/605.1.15 Epiphany/605.1.15";
+        (navigator as any).userAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0 Safari/605.1.15 Epiphany/605.1.15";
 
         expect(isSafari()).toBe(false);
         expect(isFirefox()).toBe(false);

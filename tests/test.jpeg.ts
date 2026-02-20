@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
 import "./test-helpers.ts";
 
@@ -9,8 +8,8 @@ import JPEGDecoder from '../core/decoders/jpeg.ts';
 
 import FakeWebSocket from './fake.websocket.ts';
 
-function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
-    let sock;
+function testDecodeRect(decoder: JPEGDecoder, x: number, y: number, width: number, height: number, data: number[], display: Display, depth: number): boolean {
+    let sock: Websock;
     let done = false;
 
     sock = new Websock;
@@ -25,7 +24,7 @@ function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
     if (data.length === 0) {
         done = decoder.decodeRect(x, y, width, height, sock, display, depth);
     } else {
-        sock._websocket._receiveData(new Uint8Array(data));
+        (sock as any)._websocket._receiveData(new Uint8Array(data));
     }
 
     display.flip();
@@ -34,8 +33,8 @@ function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
 }
 
 describe('JPEG decoder', function () {
-    let decoder;
-    let display;
+    let decoder: JPEGDecoder;
+    let display: Display;
 
     beforeAll(FakeWebSocket.replace);
     afterAll(FakeWebSocket.restore);
@@ -149,13 +148,13 @@ describe('JPEG decoder', function () {
 
         // Browsers have rounding errors, so we need an approximate
         // comparing function
-        function almost(a, b) {
+        function almost(a: number, b: number) {
             let diff = Math.abs(a - b);
             return diff < 5;
         }
 
         await display.flush();
-        expect(display).toHaveDisplayed(targetData, almost);
+        (expect(display) as any).toHaveDisplayed(targetData, almost);
     });
 
     // Skip: JPEG decoding requires browser Image() which is not available in @napi-rs/canvas
@@ -285,12 +284,12 @@ describe('JPEG decoder', function () {
 
         // Browsers have rounding errors, so we need an approximate
         // comparing function
-        function almost(a, b) {
+        function almost(a: number, b: number) {
             let diff = Math.abs(a - b);
             return diff < 5;
         }
 
         await display.flush();
-        expect(display).toHaveDisplayed(targetData, almost);
+        (expect(display) as any).toHaveDisplayed(targetData, almost);
     });
 });

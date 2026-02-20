@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
 import "./test-helpers.ts";
 
@@ -9,8 +8,8 @@ import CopyRectDecoder from '../core/decoders/copyrect.ts';
 
 import FakeWebSocket from './fake.websocket.ts';
 
-function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
-    let sock;
+function testDecodeRect(decoder: CopyRectDecoder, x: number, y: number, width: number, height: number, data: number[], display: Display, depth: number): boolean {
+    let sock: Websock;
     let done = false;
 
     sock = new Websock;
@@ -25,7 +24,7 @@ function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
     if (data.length === 0) {
         done = decoder.decodeRect(x, y, width, height, sock, display, depth);
     } else {
-        sock._websocket._receiveData(new Uint8Array(data));
+        (sock as any)._websocket._receiveData(new Uint8Array(data));
     }
 
     display.flip();
@@ -34,8 +33,8 @@ function testDecodeRect(decoder, x, y, width, height, data, display, depth) {
 }
 
 describe('CopyRect decoder', function () {
-    let decoder;
-    let display;
+    let decoder: CopyRectDecoder;
+    let display: Display;
 
     beforeAll(FakeWebSocket.replace);
     afterAll(FakeWebSocket.restore);
@@ -69,7 +68,7 @@ describe('CopyRect decoder', function () {
             0x00, 0xff, 0x00, 255, 0x00, 0xff, 0x00, 255, 0x00, 0x00, 0xff, 255, 0x00, 0x00, 0xff, 255
         ]);
 
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 
     test('should handle empty rects', function () {
@@ -89,6 +88,6 @@ describe('CopyRect decoder', function () {
         ]);
 
         expect(done).toBe(true);
-        expect(display).toHaveDisplayed(targetData);
+        (expect(display) as any).toHaveDisplayed(targetData);
     });
 });

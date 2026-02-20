@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test } from "bun:test";
 import { toUnsigned32bit, toSigned32bit } from '../core/util/int.ts';
 

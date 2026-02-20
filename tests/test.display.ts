@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, mock, spyOn } from "bun:test";
 import "./test-helpers.ts";
 
@@ -15,17 +14,17 @@ describe('Display/Canvas helper', function () {
 
     const basicData = new Uint8ClampedArray([0xff, 0x00, 0x00, 255, 0x00, 0xff, 0x00, 255, 0x00, 0x00, 0xff, 255, 0xff, 0xff, 0xff, 255]);
 
-    function makeImageCanvas(inputData, width, height) {
+    function makeImageCanvas(inputData: Uint8ClampedArray, width: number, height: number) {
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        const data = new ImageData(inputData, width, height);
+        const ctx = canvas.getContext('2d')!;
+        const data = new ImageData(inputData as any, width, height);
         ctx.putImageData(data, 0, 0);
         return canvas;
     }
 
-    function makeImagePng(inputData, width, height) {
+    function makeImagePng(inputData: Uint8ClampedArray, width: number, height: number) {
         const canvas = makeImageCanvas(inputData, width, height);
         const url = canvas.toDataURL();
         const data = url.split(",")[1];
@@ -33,7 +32,7 @@ describe('Display/Canvas helper', function () {
     }
 
     describe('viewport handling', function () {
-        let display;
+        let display: any;
         beforeEach(function () {
             display = new Display(document.createElement('canvas'));
             display.clipViewport = true;
@@ -115,7 +114,7 @@ describe('Display/Canvas helper', function () {
     });
 
     describe('resizing', function () {
-        let display;
+        let display: any;
         beforeEach(function () {
             display = new Display(document.createElement('canvas'));
             display.clipViewport = false;
@@ -176,8 +175,8 @@ describe('Display/Canvas helper', function () {
 
     // Skip rescaling tests: @napi-rs/canvas elements cannot be appended to happy-dom's document.body
     describe.skip('rescaling', function () {
-        let display;
-        let canvas;
+        let display: any;
+        let canvas: any;
 
         beforeEach(function () {
             canvas = document.createElement('canvas');
@@ -218,8 +217,8 @@ describe('Display/Canvas helper', function () {
 
     // Skip autoscaling tests: @napi-rs/canvas elements cannot be appended to happy-dom's document.body
     describe.skip('autoscaling', function () {
-        let display;
-        let canvas;
+        let display: any;
+        let canvas: any;
 
         beforeEach(function () {
             canvas = document.createElement('canvas');
@@ -267,7 +266,7 @@ describe('Display/Canvas helper', function () {
 
         // TODO(directxman12): improve the tests for each of the drawing functions to cover more than just the
         //                     basic cases
-        let display;
+        let display: any;
         beforeEach(function () {
             display = new Display(document.createElement('canvas'));
             display.resize(4, 4);
@@ -325,7 +324,7 @@ describe('Display/Canvas helper', function () {
     });
 
     describe('the render queue processor', function () {
-        let display;
+        let display: any;
         beforeEach(function () {
             display = new Display(document.createElement('canvas'));
             display.resize(4, 4);

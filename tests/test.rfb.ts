@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, spyOn, jest } from "bun:test";
 import "./test-helpers.ts";
 
@@ -14,33 +13,33 @@ import legacyCrypto from '../core/crypto/crypto.ts';
 
 import FakeWebSocket from './fake.websocket.ts';
 
-function push8(arr, num) {
+function push8(arr: number[], num: number) {
     arr.push(num & 0xFF);
 }
 
-function push16(arr, num) {
+function push16(arr: number[], num: number) {
     arr.push((num >> 8) & 0xFF,
              num & 0xFF);
 }
 
-function push32(arr, num) {
+function push32(arr: number[], num: number) {
     arr.push((num >> 24) & 0xFF,
              (num >> 16) & 0xFF,
              (num >>  8) & 0xFF,
              num & 0xFF);
 }
 
-function pushString(arr, string) {
+function pushString(arr: number[], string: string) {
     let utf8 = unescape(encodeURIComponent(string));
     for (let i = 0; i < utf8.length; i++) {
         arr.push(utf8.charCodeAt(i));
     }
 }
 
-function deflateWithSize(data) {
+function deflateWithSize(data: string) {
     // Adds the size of the string in front before deflating
 
-    let unCompData = [];
+    let unCompData: number[] = [];
     unCompData.push((data.length >> 24) & 0xFF,
                     (data.length >> 16) & 0xFF,
                     (data.length >>  8) & 0xFF,
@@ -69,22 +68,23 @@ function deflateWithSize(data) {
 }
 
 describe('Remote Frame Buffer protocol client', function () {
-    let clock;
-    let raf;
-    let fakeResizeObserver = null;
+    let clock: any;
+    let raf: any;
+    let fakeResizeObserver: any = null;
     const realObserver = window.ResizeObserver;
 
     // Since we are using fake timers we don't actually want
     // to wait for the browser to observe the size change,
     // that's why we use a fake ResizeObserver
     class FakeResizeObserver {
-        constructor(handler) {
+        fire: any;
+        constructor(handler: any) {
             this.fire = handler;
             fakeResizeObserver = this;
         }
         disconnect() {}
-        observe(target, options) {}
-        unobserve(target) {}
+        observe(target: any, options?: any) {}
+        unobserve(target: any) {}
     }
 
     beforeAll(FakeWebSocket.replace);
@@ -92,39 +92,39 @@ describe('Remote Frame Buffer protocol client', function () {
 
     beforeAll(function () {
         jest.useFakeTimers();
-        clock = { tick: (ms) => jest.advanceTimersByTime(ms || 0) };
+        clock = { tick: (ms: number) => jest.advanceTimersByTime(ms || 0) };
         // sinon doesn't support this yet
         raf = window.requestAnimationFrame;
-        window.requestAnimationFrame = setTimeout;
+        (window as any).requestAnimationFrame = setTimeout;
         // We must do this in a 'before' since it needs to be set before
         // the RFB constructor, which runs in beforeEach further down
-        window.ResizeObserver = FakeResizeObserver;
+        (window as any).ResizeObserver = FakeResizeObserver;
         // Use a single set of buffers instead of reallocating to
         // speed up tests
         const sock = new Websock();
         const _sQ = new Uint8Array(sock._sQbufferSize);
         const rQ = new Uint8Array(sock._rQbufferSize);
 
-        Websock.prototype._oldAllocateBuffers = Websock.prototype._allocateBuffers;
+        (Websock.prototype as any)._oldAllocateBuffers = Websock.prototype._allocateBuffers;
         Websock.prototype._allocateBuffers = function () {
             this._sQ = _sQ;
             this._rQ = rQ;
         };
 
         // Avoiding printing the entire Websock buffer on errors
-        Websock.prototype.inspect = function () { return "[object Websock]"; };
+        (Websock.prototype as any).inspect = function () { return "[object Websock]"; };
     });
 
     afterAll(function () {
-        Websock.prototype._allocateBuffers = Websock.prototype._oldAllocateBuffers;
-        delete Websock.prototype.inspect;
+        Websock.prototype._allocateBuffers = (Websock.prototype as any)._oldAllocateBuffers;
+        delete (Websock.prototype as any).inspect;
         jest.useRealTimers();
-        window.requestAnimationFrame = raf;
+        (window as any).requestAnimationFrame = raf;
         window.ResizeObserver = realObserver;
     });
 
-    let container;
-    let rfbs;
+    let container: any;
+    let rfbs: any[];
 
     beforeEach(function () {
         // Create a container element for all RFB objects to attach to
@@ -139,7 +139,7 @@ describe('Remote Frame Buffer protocol client', function () {
     afterEach(function () {
         // Make sure every created RFB object is properly cleaned up
         // or they might affect subsequent tests
-        rfbs.forEach(function (rfb) {
+        rfbs.forEach(function (rfb: any) {
             rfb.disconnect();
             expect(rfb._disconnect).toHaveBeenCalled();
         });
@@ -149,9 +149,9 @@ describe('Remote Frame Buffer protocol client', function () {
         container = null;
     });
 
-    function makeRFB(url, options) {
+    function makeRFB(url?: string, options?: any): any {
         url = url || 'wss://host:8675';
-        const rfb = new RFB(container, url, options);
+        const rfb: any = new RFB(container, url, options);
         jest.advanceTimersByTime(0);
         rfb._sock._websocket._open();
         rfb._rfbConnectionState = 'connected';
@@ -160,7 +160,7 @@ describe('Remote Frame Buffer protocol client', function () {
         return rfb;
     }
 
-    function elementToClient(x, y, client) {
+    function elementToClient(x: number, y: number, client: any) {
         let res = { x: 0, y: 0 };
 
         let bounds = client._canvas.getBoundingClientRect();
@@ -178,7 +178,7 @@ describe('Remote Frame Buffer protocol client', function () {
         return res;
     }
 
-    function sendMouseMoveEvent(x, y, buttons, client) {
+    function sendMouseMoveEvent(x: number, y: number, buttons: number, client: any) {
         let pos = elementToClient(x, y, client);
         let ev;
 
@@ -191,7 +191,7 @@ describe('Remote Frame Buffer protocol client', function () {
         client._canvas.dispatchEvent(ev);
     }
 
-    function sendMouseButtonEvent(x, y, down, buttons, client) {
+    function sendMouseButtonEvent(x: number, y: number, down: boolean, buttons: number, client: any) {
         let pos = elementToClient(x, y, client);
         let ev;
 
@@ -204,10 +204,10 @@ describe('Remote Frame Buffer protocol client', function () {
         client._canvas.dispatchEvent(ev);
     }
 
-    function gestureStart(gestureType, x, y, client,
+    function gestureStart(gestureType: string, x: number, y: number, client: any,
                           magnitudeX = 0, magnitudeY = 0) {
         let pos = elementToClient(x, y, client);
-        let detail = { type: gestureType, clientX: pos.x, clientY: pos.y };
+        let detail: any = { type: gestureType, clientX: pos.x, clientY: pos.y };
 
         detail.magnitudeX = magnitudeX;
         detail.magnitudeY = magnitudeY;
@@ -216,27 +216,27 @@ describe('Remote Frame Buffer protocol client', function () {
         client._canvas.dispatchEvent(ev);
     }
 
-    function gestureMove(gestureType, x, y, client,
+    function gestureMove(gestureType: string, x: number, y: number, client: any,
                          magnitudeX = 0, magnitudeY = 0) {
         let pos = elementToClient(x, y, client);
-        let detail = { type: gestureType, clientX: pos.x, clientY: pos.y };
+        let detail: any = { type: gestureType, clientX: pos.x, clientY: pos.y };
 
         detail.magnitudeX = magnitudeX;
         detail.magnitudeY = magnitudeY;
 
-        let ev = new CustomEvent('gesturemove', { detail: detail }, client);
+        let ev = new CustomEvent('gesturemove', { detail: detail });
         client._canvas.dispatchEvent(ev);
     }
 
-    function gestureEnd(gestureType, x, y, client) {
+    function gestureEnd(gestureType: string, x: number, y: number, client: any) {
         let pos = elementToClient(x, y, client);
-        let detail = { type: gestureType, clientX: pos.x, clientY: pos.y };
+        let detail: any = { type: gestureType, clientX: pos.x, clientY: pos.y };
         let ev = new CustomEvent('gestureend', { detail: detail });
         client._canvas.dispatchEvent(ev);
     }
 
-    function sendFbuMsg(rectInfo, rectData, client, rectCnt) {
-        let data = [];
+    function sendFbuMsg(rectInfo: any, rectData: any, client: any, rectCnt?: any) {
+        let data: number[] = [];
 
         if (!rectCnt || rectCnt > -1) {
             // header
@@ -259,7 +259,7 @@ describe('Remote Frame Buffer protocol client', function () {
         client._sock._websocket._receiveData(new Uint8Array(data));
     }
 
-    function sendExtendedDesktopSize(client, reason, result, width, height, screenId, screenFlags) {
+    function sendExtendedDesktopSize(client: any, reason: number, result: number, width: number, height: number, screenId: number, screenFlags: number) {
         let rectInfo = { x: reason, y: result, width: width, height: height, encoding: -308 };
         let rectData = [
             0x01,        // number of screens = 1
@@ -284,7 +284,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
     describe('Connecting/Disconnecting', function () {
         describe('#RFB (constructor)', function () {
-            let open, attach;
+            let open: any, attach: any;
             beforeEach(function () {
                 open = spyOn(Websock.prototype, 'open');
                 attach = spyOn(Websock.prototype, 'attach');
@@ -308,7 +308,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
             test('should handle WebSocket/RTCDataChannel objects', function () {
                 let sock = new FakeWebSocket('ws://HOST:8675/PATH', []);
-                new RFB(document.createElement('div'), sock);
+                new RFB(document.createElement('div'), sock as any);
                 expect(open).not.toHaveBeenCalled();
                 expect(attach).toHaveBeenCalledTimes(1);
                 expect(attach).toHaveBeenCalledWith(sock);
@@ -317,34 +317,34 @@ describe('Remote Frame Buffer protocol client', function () {
             test('should handle already open WebSocket/RTCDataChannel objects', function () {
                 let sock = new FakeWebSocket('ws://HOST:8675/PATH', []);
                 sock._open();
-                const client = new RFB(document.createElement('div'), sock);
+                const client = new RFB(document.createElement('div'), sock as any);
                 let callback = mock(() => {});
                 client.addEventListener('disconnect', callback);
                 expect(open).not.toHaveBeenCalled();
                 expect(attach).toHaveBeenCalledTimes(1);
                 expect(attach).toHaveBeenCalledWith(sock);
                 // Check if it is ready for some data
-                sock._receiveData(new Uint8Array(['R', 'F', 'B', '0', '0', '3', '0', '0', '8']));
+                sock._receiveData(new Uint8Array(['R', 'F', 'B', '0', '0', '3', '0', '0', '8'].map((c: string) => c.charCodeAt(0))));
                 expect(callback).not.toHaveBeenCalled();
             });
 
             test('should refuse closed WebSocket/RTCDataChannel objects', function () {
                 let sock = new FakeWebSocket('ws://HOST:8675/PATH', []);
                 sock.readyState = WebSocket.CLOSED;
-                expect(() => new RFB(document.createElement('div'), sock)).toThrow();
+                expect(() => new RFB(document.createElement('div'), sock as any)).toThrow();
             });
 
             test('should pass on attach problems', function () {
                 attach.mockRestore();
                 attach = spyOn(Websock.prototype, 'attach').mockImplementation(() => { throw new Error('Failure'); });
                 let sock = new FakeWebSocket('ws://HOST:8675/PATH', []);
-                expect(() => new RFB(document.createElement('div'), sock)).toThrow('Failure');
+                expect(() => new RFB(document.createElement('div'), sock as any)).toThrow('Failure');
             });
         });
 
         describe('#disconnect', function () {
-            let client;
-            let close;
+            let client: any;
+            let close: any;
 
             beforeEach(function () {
                 client = makeRFB();
@@ -369,7 +369,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 client.disconnect();
                 client._sock._eventHandlers.close(new CloseEvent("close", { 'code': 1000, 'reason': "", 'wasClean': true }));
                 expect(callback).toHaveBeenCalledTimes(1);
-                expect(callback.mock.calls[0][0].detail.clean).toBe(true);
+                expect((callback.mock.calls as any)[0][0].detail.clean).toBe(true);
             });
 
             test('should force disconnect if disconnecting takes too long', function () {
@@ -378,7 +378,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 client.disconnect();
                 jest.advanceTimersByTime(3 * 1000);
                 expect(callback).toHaveBeenCalledTimes(1);
-                expect(callback.mock.calls[0][0].detail.clean).toBe(true);
+                expect((callback.mock.calls as any)[0][0].detail.clean).toBe(true);
             });
 
             test('should not fail if disconnect completes before timeout', function () {
@@ -390,7 +390,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 client._sock._eventHandlers.close(new CloseEvent("close", { 'code': 1000, 'reason': "", 'wasClean': true }));
                 jest.advanceTimersByTime(3 * 1000 / 2 + 1);
                 expect(callback).toHaveBeenCalledTimes(1);
-                expect(callback.mock.calls[0][0].detail.clean).toBe(true);
+                expect((callback.mock.calls as any)[0][0].detail.clean).toBe(true);
             });
 
             test('should unregister error event handler', function () {
@@ -414,7 +414,7 @@ describe('Remote Frame Buffer protocol client', function () {
     });
 
     describe('Public API basic behavior', function () {
-        let client;
+        let client: any;
         beforeEach(function () {
             client = makeRFB();
         });
@@ -422,9 +422,9 @@ describe('Remote Frame Buffer protocol client', function () {
         describe('#sendCtrlAlDel', function () {
             test('should sent ctrl[down]-alt[down]-del[down] then del[up]-alt[up]-ctrl[up]', function () {
                 let esock = new Websock();
-                let ews = new FakeWebSocket();
+                let ews: any = new FakeWebSocket('ws://localhost');
                 ews._open();
-                esock.attach(ews);
+                esock.attach(ews as any);
                 RFB.messages.keyEvent(esock, 0xFFE3, 1);
                 RFB.messages.keyEvent(esock, 0xFFE9, 1);
                 RFB.messages.keyEvent(esock, 0xFFFF, 1);
@@ -454,9 +454,9 @@ describe('Remote Frame Buffer protocol client', function () {
         describe('#sendKey', function () {
             test('should send a single key with the given code and state (down = true)', function () {
                 let esock = new Websock();
-                let ews = new FakeWebSocket();
+                let ews: any = new FakeWebSocket('ws://localhost');
                 ews._open();
-                esock.attach(ews);
+                esock.attach(ews as any);
                 RFB.messages.keyEvent(esock, 123, 1);
                 let expected = ews._getSentData();
 
@@ -467,9 +467,9 @@ describe('Remote Frame Buffer protocol client', function () {
 
             test('should send both a down and up event if the state is not specified', function () {
                 let esock = new Websock();
-                let ews = new FakeWebSocket();
+                let ews: any = new FakeWebSocket('ws://localhost');
                 ews._open();
-                esock.attach(ews);
+                esock.attach(ews as any);
                 RFB.messages.keyEvent(esock, 123, 1);
                 RFB.messages.keyEvent(esock, 123, 0);
                 let expected = ews._getSentData();
@@ -494,9 +494,9 @@ describe('Remote Frame Buffer protocol client', function () {
             test('should send QEMU extended events if supported', function () {
                 client._qemuExtKeyEventSupported = true;
                 let esock = new Websock();
-                let ews = new FakeWebSocket();
+                let ews: any = new FakeWebSocket('ws://localhost');
                 ews._open();
-                esock.attach(ews);
+                esock.attach(ews as any);
                 RFB.messages.QEMUExtendedKeyEvent(esock, 0x20, true, 0x0039);
                 let expected = ews._getSentData();
 
@@ -508,9 +508,9 @@ describe('Remote Frame Buffer protocol client', function () {
             test('should not send QEMU extended events if unknown key code', function () {
                 client._qemuExtKeyEventSupported = true;
                 let esock = new Websock();
-                let ews = new FakeWebSocket();
+                let ews: any = new FakeWebSocket('ws://localhost');
                 ews._open();
-                esock.attach(ews);
+                esock.attach(ews as any);
                 RFB.messages.keyEvent(esock, 123, 1);
                 let expected = ews._getSentData();
 
@@ -551,8 +551,8 @@ describe('Remote Frame Buffer protocol client', function () {
                 });
 
                 afterEach(function () {
-                    RFB.messages.clientCutText.mockRestore();
-                    RFB.messages.extendedClipboardNotify.mockRestore();
+                    (RFB.messages.clientCutText as any).mockRestore();
+                    (RFB.messages.extendedClipboardNotify as any).mockRestore();
                 });
 
                 test('should send the given text in an clipboard update', function () {
@@ -642,7 +642,7 @@ describe('Remote Frame Buffer protocol client', function () {
     });
 
     describe('Clipping', function () {
-        let client;
+        let client: any;
 
         beforeEach(function () {
             client = makeRFB();
@@ -653,10 +653,10 @@ describe('Remote Frame Buffer protocol client', function () {
 
         test('should update display clip state when changing the property', function () {
             const origSetter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(client._display), "clipViewport")?.set || Object.getOwnPropertyDescriptor(client._display, "clipViewport")?.set;
-            const spy = { set: mock((...args) => { origSetter.apply(client._display, args); }) };
+            const spy = { set: mock((...args: any[]) => { origSetter!.apply(client._display, args as any); }) };
             const origDescriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(client._display), "clipViewport") || Object.getOwnPropertyDescriptor(client._display, "clipViewport");
             Object.defineProperty(client._display, "clipViewport", {
-                get: origDescriptor.get ? origDescriptor.get.bind(client._display) : undefined,
+                get: origDescriptor!.get ? origDescriptor!.get.bind(client._display) : undefined,
                 set: spy.set,
                 configurable: true
             });
@@ -735,7 +735,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 spyOn(RFB.messages, "setDesktopSize");
             });
             afterEach(function () {
-                RFB.messages.setDesktopSize.mockRestore();
+                (RFB.messages.setDesktopSize as any).mockRestore();
             });
             test('should not change remote size when changing clipping', function () {
                 // When changing clipping the scrollbars of the container
@@ -762,7 +762,7 @@ describe('Remote Frame Buffer protocol client', function () {
             });
 
             afterEach(function () {
-                RFB.messages.pointerEvent.mockRestore();
+                (RFB.messages.pointerEvent as any).mockRestore();
             });
 
             test('should not send button messages when initiating viewport dragging', function () {
@@ -868,7 +868,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 expect(client._display.viewportChangePos).toHaveBeenCalledWith(-30, 0);
 
                 client._display.viewportChangePos.mockClear();
-                RFB.messages.pointerEvent.mockClear();
+                (RFB.messages.pointerEvent as any).mockClear();
 
                 // Now a small movement should move right away
 
@@ -892,7 +892,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 expect(client._display.viewportChangePos).not.toHaveBeenCalled();
 
                 client._display.viewportChangePos.mockClear();
-                RFB.messages.pointerEvent.mockClear();
+                (RFB.messages.pointerEvent as any).mockClear();
 
                 gestureMove('longpress', 43, 9, client);
                 gestureEnd('longpress', 43, 9, client);
@@ -913,7 +913,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 expect(client._display.viewportChangePos).not.toHaveBeenCalled();
 
                 client._display.viewportChangePos.mockClear();
-                RFB.messages.pointerEvent.mockClear();
+                (RFB.messages.pointerEvent as any).mockClear();
 
                 gestureEnd('longpress', 14, 9, client);
 
@@ -965,7 +965,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 expect(RFB.messages.pointerEvent).toHaveBeenNthCalledWith(2, client._sock,
                                                                                      14, 9, 0x0);
 
-                RFB.messages.pointerEvent.mockClear();
+                (RFB.messages.pointerEvent as any).mockClear();
 
                 jest.advanceTimersByTime(100);
 
@@ -975,7 +975,7 @@ describe('Remote Frame Buffer protocol client', function () {
     });
 
     describe('Scaling', function () {
-        let client;
+        let client: any;
         beforeEach(function () {
             client = makeRFB();
             container.style.width = '70px';
@@ -990,10 +990,10 @@ describe('Remote Frame Buffer protocol client', function () {
 
         test.skip('should update display scale factor when changing the property', function () {
             const origSetter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(client._display), "scale")?.set || Object.getOwnPropertyDescriptor(client._display, "scale")?.set;
-            const spy = { set: mock((...args) => { origSetter.apply(client._display, args); }) };
+            const spy = { set: mock((...args: any[]) => { origSetter!.apply(client._display, args as any); }) };
             const origDescriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(client._display), "scale") || Object.getOwnPropertyDescriptor(client._display, "scale");
             Object.defineProperty(client._display, "scale", {
-                get: origDescriptor.get ? origDescriptor.get.bind(client._display) : undefined,
+                get: origDescriptor!.get ? origDescriptor!.get.bind(client._display) : undefined,
                 set: spy.set,
                 configurable: true
             });
@@ -1013,10 +1013,10 @@ describe('Remote Frame Buffer protocol client', function () {
             client.clipViewport = true;
 
             const origSetter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(client._display), "clipViewport")?.set || Object.getOwnPropertyDescriptor(client._display, "clipViewport")?.set;
-            const spy = { set: mock((...args) => { origSetter.apply(client._display, args); }) };
+            const spy = { set: mock((...args: any[]) => { origSetter!.apply(client._display, args as any); }) };
             const origDescriptor = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(client._display), "clipViewport") || Object.getOwnPropertyDescriptor(client._display, "clipViewport");
             Object.defineProperty(client._display, "clipViewport", {
-                get: origDescriptor.get ? origDescriptor.get.bind(client._display) : undefined,
+                get: origDescriptor!.get ? origDescriptor!.get.bind(client._display) : undefined,
                 set: spy.set,
                 configurable: true
             });
@@ -1102,7 +1102,7 @@ describe('Remote Frame Buffer protocol client', function () {
     });
 
     describe('Remote resize', function () {
-        let client;
+        let client: any;
         beforeEach(function () {
             client = makeRFB();
             client.resizeSession = true;
@@ -1113,17 +1113,17 @@ describe('Remote Frame Buffer protocol client', function () {
 
             sendExtendedDesktopSize(client, 0, 0, 4, 4, 0x7890abcd, 0x12345678);
 
-            if (RFB.messages.setDesktopSize.calledOnce) {
-                let width = RFB.messages.setDesktopSize.mock.calls[0][1];
-                let height = RFB.messages.setDesktopSize.mock.calls[0][2];
+            if ((RFB.messages.setDesktopSize as any).calledOnce) {
+                let width = (RFB.messages.setDesktopSize as any).mock.calls[0][1];
+                let height = (RFB.messages.setDesktopSize as any).mock.calls[0][2];
                 sendExtendedDesktopSize(client, 1, 0, width, height, 0x7890abcd, 0x12345678);
-                RFB.messages.setDesktopSize.mockClear();
+                (RFB.messages.setDesktopSize as any).mockClear();
                 jest.advanceTimersByTime(10000);
             }
         });
 
         afterEach(function () {
-            RFB.messages.setDesktopSize.mockRestore();
+            (RFB.messages.setDesktopSize as any).mockRestore();
         });
 
         // Skip: requires CSS layout (container.clientWidth/clientHeight) not available in happy-dom
@@ -1164,7 +1164,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 expect.anything(), 70, 80, 0x7890abcd, 0x12345678);
 
             sendExtendedDesktopSize(client, 1, 0, 70, 80, 0x7890abcd, 0x12345678);
-            RFB.messages.setDesktopSize.mockClear();
+            (RFB.messages.setDesktopSize as any).mockClear();
 
             // Second message should not trigger a resize
 
@@ -1201,7 +1201,7 @@ describe('Remote Frame Buffer protocol client', function () {
             // Server responds with the requested size 40x50
             sendExtendedDesktopSize(client, 1, 0, 40, 50, 0x7890abcd, 0x12345678);
 
-            RFB.messages.setDesktopSize.mockClear();
+            (RFB.messages.setDesktopSize as any).mockClear();
 
             // size is still 40x50
             jest.advanceTimersByTime(1000);
@@ -1223,7 +1223,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 expect.anything(), 40, 50, 0x7890abcd, 0x12345678);
 
             sendExtendedDesktopSize(client, 1, 0, 40, 50, 0x7890abcd, 0x12345678);
-            RFB.messages.setDesktopSize.mockClear();
+            (RFB.messages.setDesktopSize as any).mockClear();
 
             jest.advanceTimersByTime(1000);
             container.style.width = '70px';
@@ -1248,7 +1248,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 expect.anything(), 20, 30, 0x7890abcd, 0x12345678);
 
             sendExtendedDesktopSize(client, 1, 0, 20, 30, 0x7890abcd, 0x12345678);
-            RFB.messages.setDesktopSize.mockClear();
+            (RFB.messages.setDesktopSize as any).mockClear();
 
             jest.advanceTimersByTime(20);
 
@@ -1280,7 +1280,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
             expect(RFB.messages.setDesktopSize).toHaveBeenCalledTimes(1);
 
-            RFB.messages.setDesktopSize.mockClear();
+            (RFB.messages.setDesktopSize as any).mockClear();
 
             jest.advanceTimersByTime(1000);
             container.style.width = '20px';
@@ -1300,7 +1300,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
             expect(RFB.messages.setDesktopSize).toHaveBeenCalledTimes(1);
 
-            RFB.messages.setDesktopSize.mockClear();
+            (RFB.messages.setDesktopSize as any).mockClear();
 
             jest.advanceTimersByTime(1000);
             container.style.width = '20px';
@@ -1324,7 +1324,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
             expect(RFB.messages.setDesktopSize).toHaveBeenCalledTimes(1);
 
-            RFB.messages.setDesktopSize.mockClear();
+            (RFB.messages.setDesktopSize as any).mockClear();
 
             // Server responds with the requested size 40x50
             sendExtendedDesktopSize(client, 1, 0, 40, 50, 0x7890abcd, 0x12345678);
@@ -1339,7 +1339,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
             expect(RFB.messages.setDesktopSize).toHaveBeenCalledTimes(1);
 
-            RFB.messages.setDesktopSize.mockClear();
+            (RFB.messages.setDesktopSize as any).mockClear();
 
             jest.advanceTimersByTime(1000);
             container.style.width = '20px';
@@ -1420,7 +1420,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
     describe('Misc internals', function () {
         describe('#_fail', function () {
-            let client;
+            let client: any;
             beforeEach(function () {
                 client = makeRFB();
             });
@@ -1453,30 +1453,30 @@ describe('Remote Frame Buffer protocol client', function () {
                 client._fail();
                 jest.advanceTimersByTime(2000);
                 expect(spy).toHaveBeenCalledTimes(1);
-                expect(spy.mock.calls[0][0].detail.clean).toBe(false);
+                expect((spy.mock.calls as any)[0][0].detail.clean).toBe(false);
             });
 
         });
     });
 
     describe('Protocol initialization states', function () {
-        let client;
+        let client: any;
         beforeEach(function () {
             client = makeRFB();
             client._rfbConnectionState = 'connecting';
         });
 
-        function sendVer(ver, client) {
+        function sendVer(ver: string, client: any) {
             const arr = new Uint8Array(12);
             for (let i = 0; i < ver.length; i++) {
                 arr[i+4] = ver.charCodeAt(i);
             }
-            arr[0] = 'R'; arr[1] = 'F'; arr[2] = 'B'; arr[3] = ' ';
-            arr[11] = '\n';
+            arr[0] = 'R'.charCodeAt(0); arr[1] = 'F'.charCodeAt(0); arr[2] = 'B'.charCodeAt(0); arr[3] = ' '.charCodeAt(0);
+            arr[11] = '\n'.charCodeAt(0);
             client._sock._websocket._receiveData(arr);
         }
 
-        function sendSecurity(type, cl) {
+        function sendSecurity(type: number, cl: any) {
             cl._sock._websocket._receiveData(new Uint8Array([1, type]));
         }
 
@@ -1529,7 +1529,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     sendVer('002.000', client);
 
                     expect(callback).toHaveBeenCalledTimes(1);
-                    expect(callback.mock.calls[0][0].detail.clean).toBe(false);
+                    expect((callback.mock.calls as any)[0][0].detail.clean).toBe(false);
                 });
             });
 
@@ -1593,7 +1593,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 client._sock._websocket._receiveData(new Uint8Array(authSchemes));
 
                 expect(callback).toHaveBeenCalledTimes(1);
-                expect(callback.mock.calls[0][0].detail.clean).toBe(false);
+                expect((callback.mock.calls as any)[0][0].detail.clean).toBe(false);
             });
 
             test('should fail with the appropriate message if no types are sent', function () {
@@ -1604,8 +1604,8 @@ describe('Remote Frame Buffer protocol client', function () {
                 client._sock._websocket._receiveData(new Uint8Array(failureData));
 
                 expect(callback).toHaveBeenCalledTimes(1);
-                expect(callback.mock.calls[0][0].detail.status).toBe(1);
-                expect(callback.mock.calls[0][0].detail.reason).toBe("whoops");
+                expect((callback.mock.calls as any)[0][0].detail.status).toBe(1);
+                expect((callback.mock.calls as any)[0][0].detail.reason).toBe("whoops");
             });
 
             test('should transition to the Authentication state and continue on successful negotiation', function () {
@@ -1635,8 +1635,8 @@ describe('Remote Frame Buffer protocol client', function () {
                 client._sock._websocket._receiveData(new Uint8Array(data));
 
                 expect(callback).toHaveBeenCalledTimes(1);
-                expect(callback.mock.calls[0][0].detail.status).toBe(1);
-                expect(callback.mock.calls[0][0].detail.reason).toBe("Whoopsies");
+                expect((callback.mock.calls as any)[0][0].detail.status).toBe(1);
+                expect((callback.mock.calls as any)[0][0].detail.reason).toBe("Whoopsies");
             });
 
             test('should transition straight to ServerInitialisation on "no auth" for versions < 3.7', function () {
@@ -1674,7 +1674,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 sendSecurity(57, client);
 
                 expect(callback).toHaveBeenCalledTimes(1);
-                expect(callback.mock.calls[0][0].detail.clean).toBe(false);
+                expect((callback.mock.calls as any)[0][0].detail.clean).toBe(false);
             });
 
             describe('VNC authentication (type 2) handler', function () {
@@ -1688,7 +1688,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     client._sock._websocket._receiveData(new Uint8Array(challenge));
 
                     expect(spy).toHaveBeenCalledTimes(1);
-                    expect(spy.mock.calls[0][0].detail.types).toEqual(expect.arrayContaining(["password"]));
+                    expect((spy.mock.calls as any)[0][0].detail.types).toEqual(expect.arrayContaining(["password"]));
                 });
 
                 test('should encrypt the password with DES and then send it back', function () {
@@ -1723,7 +1723,7 @@ describe('Remote Frame Buffer protocol client', function () {
             });
 
             describe('RSA-AES authentication (type 6) handler', function () {
-                function fakeGetRandomValues(arr) {
+                function fakeGetRandomValues(arr: any) {
                     if (arr.length === 16) {
                         arr.set(new Uint8Array([
                             0x1c, 0x08, 0xfe, 0x21, 0x78, 0xef, 0x4e, 0xf9,
@@ -1766,7 +1766,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 }
 
                 async function fakeGeneratekey() {
-                    let key = { "alg": "RSA-OAEP-256",
+                    let key: any = { "alg": "RSA-OAEP-256",
                                 "d": "B7QR2yI8sXjo8vQhJpX9odqqR6wIuPr" +
                                      "TM1B1JJEKVeSrr7OYcc1FRJ52Vap9LI" +
                                      "AU-ezigs9QDvWMxknB8motLnG69Wck3" +
@@ -1832,12 +1832,12 @@ describe('Remote Frame Buffer protocol client', function () {
                 }
 
                 beforeAll(() => {
-                    spyOn(window.crypto, "getRandomValues").mockImplementation(fakeGetRandomValues);
-                    spyOn(window.crypto.subtle, "generateKey").mockImplementation(fakeGeneratekey);
+                    spyOn(window.crypto, "getRandomValues").mockImplementation(fakeGetRandomValues as any);
+                    spyOn(window.crypto.subtle, "generateKey").mockImplementation(fakeGeneratekey as any);
                 });
                 afterAll(() => {
-                    window.crypto.getRandomValues.mockRestore();
-                    window.crypto.subtle.generateKey.mockRestore();
+                    (window.crypto.getRandomValues as any).mockRestore();
+                    (window.crypto.subtle.generateKey as any).mockRestore();
                 });
 
                 beforeEach(function () {
@@ -2084,7 +2084,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
                 test('should fire the serververification event', async function () {
                     let verification = new Promise((resolve, reject) => {
-                        client.addEventListener("serververification", (e) => {
+                        client.addEventListener("serververification", (e: any) => {
                             resolve(e.detail.publickey);
                         });
                     });
@@ -2097,12 +2097,12 @@ describe('Remote Frame Buffer protocol client', function () {
 
                 test('should handle approveServer and fire the credentialsrequired event', async function () {
                     let verification = new Promise((resolve, reject) => {
-                        client.addEventListener("serververification", (e) => {
+                        client.addEventListener("serververification", (e: any) => {
                             resolve(e.detail.publickey);
                         });
                     });
                     let credentials = new Promise((resolve, reject) => {
-                        client.addEventListener("credentialsrequired", (e) => {
+                        client.addEventListener("credentialsrequired", (e: any) => {
                             resolve(e.detail.types);
                         });
                     });
@@ -2121,12 +2121,12 @@ describe('Remote Frame Buffer protocol client', function () {
 
                 test('should send credentials to server', async function () {
                     let verification = new Promise((resolve, reject) => {
-                        client.addEventListener("serververification", (e) => {
+                        client.addEventListener("serververification", (e: any) => {
                             resolve(e.detail.publickey);
                         });
                     });
                     let credentials = new Promise((resolve, reject) => {
-                        client.addEventListener("credentialsrequired", (e) => {
+                        client.addEventListener("credentialsrequired", (e: any) => {
                             resolve(e.detail.types);
                         });
                     });
@@ -2142,7 +2142,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
                     await credentials;
 
-                    let expected = [];
+                    let expected: number[] = [];
                     expected = expected.concat(clientPublicKey);
                     expected = expected.concat(clientRandom);
                     expected = expected.concat(clientHash);
@@ -2155,8 +2155,8 @@ describe('Remote Frame Buffer protocol client', function () {
                     //        the async stuff is done, so we hook in
                     //        to this internal function that is
                     //        called at the end
-                    await new Promise((resolve, reject) => {
-                        spyOn(client._sock._websocket, "send").mockImplementation((data) => {
+                    await new Promise<void>((resolve, reject) => {
+                        spyOn(client._sock._websocket, "send").mockImplementation((data: any) => {
                             FakeWebSocket.prototype.send.call(client._sock._websocket, data);
                             resolve();
                         });
@@ -2168,17 +2168,17 @@ describe('Remote Frame Buffer protocol client', function () {
 
             describe('ARD authentication (type 30) handler', function () {
                 let byteArray = new Uint8Array(Array.from(new Uint8Array(128).keys()));
-                function fakeGetRandomValues(arr) {
+                function fakeGetRandomValues(arr: any) {
                     if (arr.length == 128) {
                         arr.set(byteArray);
                     }
                     return arr;
                 }
                 beforeAll(() => {
-                    spyOn(window.crypto, "getRandomValues").mockImplementation(fakeGetRandomValues);
+                    spyOn(window.crypto, "getRandomValues").mockImplementation(fakeGetRandomValues as any);
                 });
                 afterAll(() => {
-                    window.crypto.getRandomValues.mockRestore();
+                    (window.crypto.getRandomValues as any).mockRestore();
                 });
                 test('should fire the credentialsrequired event if all credentials are missing', function () {
                     const spy = mock(() => {});
@@ -2186,7 +2186,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     sendSecurity(30, client);
 
                     expect(spy).toHaveBeenCalledTimes(1);
-                    expect(spy.mock.calls[0][0].detail.types).toEqual(expect.arrayContaining(["username", "password"]));
+                    expect((spy.mock.calls as any)[0][0].detail.types).toEqual(expect.arrayContaining(["username", "password"]));
                 });
 
                 test('should fire the credentialsrequired event if some credentials are missing', function () {
@@ -2196,7 +2196,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     sendSecurity(30, client);
 
                     expect(spy).toHaveBeenCalledTimes(1);
-                    expect(spy.mock.calls[0][0].detail.types).toEqual(expect.arrayContaining(["username", "password"]));
+                    expect((spy.mock.calls as any)[0][0].detail.types).toEqual(expect.arrayContaining(["username", "password"]));
                 });
 
                 test('should return properly encrypted credentials and public key', async function () {
@@ -2211,13 +2211,13 @@ describe('Remote Frame Buffer protocol client', function () {
                     const generator = new Uint8Array([127, 255]);
                     const prime = new Uint8Array(byteArray);
                     const serverKey = legacyCrypto.generateKey(
-                        { name: "DH", g: generator, p: prime }, false, ["deriveBits"]);
+                        { name: "DH", g: generator, p: prime } as any, false, ["deriveBits"]);
                     const clientKey = legacyCrypto.generateKey(
-                        { name: "DH", g: generator, p: prime }, false, ["deriveBits"]);
+                        { name: "DH", g: generator, p: prime } as any, false, ["deriveBits"]);
                     const serverPublicKey = legacyCrypto.exportKey("raw", serverKey.publicKey);
                     const clientPublicKey = legacyCrypto.exportKey("raw", clientKey.publicKey);
 
-                    let data = [];
+                    let data: number[] = [];
 
                     data = data.concat(Array.from(generator));
                     push16(data, prime.length);
@@ -2230,7 +2230,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     //        async stuff is done, so we hook in to this
                     //        internal function that is called at the
                     //        end
-                    await new Promise((resolve, reject) => {
+                    await new Promise<void>((resolve, reject) => {
                         spyOn(client, "_resumeAuthentication").mockImplementation(() => {
                             RFB.prototype._resumeAuthentication.call(client);
                             resolve();
@@ -2259,7 +2259,7 @@ describe('Remote Frame Buffer protocol client', function () {
             });
 
             describe('MSLogonII authentication (type 113) handler', function () {
-                function fakeGetRandomValues(arr) {
+                function fakeGetRandomValues(arr: any) {
                     if (arr.length == 8) {
                         arr.set(new Uint8Array([0, 0, 0, 0, 5, 6, 7, 8]));
                     } else if (arr.length == 256) {
@@ -2313,10 +2313,10 @@ describe('Remote Frame Buffer protocol client', function () {
                     0x1b, 0xad, 0x42, 0x32, 0x4e, 0x6d, 0x1f, 0x49,
                 ]);
                 beforeAll(() => {
-                    spyOn(window.crypto, "getRandomValues").mockImplementation(fakeGetRandomValues);
+                    spyOn(window.crypto, "getRandomValues").mockImplementation(fakeGetRandomValues as any);
                 });
                 afterAll(() => {
-                    window.crypto.getRandomValues.mockRestore();
+                    (window.crypto.getRandomValues as any).mockRestore();
                 });
                 test('should send public value and encrypted credentials', function () {
                     client.addEventListener("credentialsrequired", () => {
@@ -2360,7 +2360,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     sendSecurity(22, client);
 
                     expect(spy).toHaveBeenCalledTimes(1);
-                    expect(spy.mock.calls[0][0].detail.types).toEqual(expect.arrayContaining(["username", "password", "target"]));
+                    expect((spy.mock.calls as any)[0][0].detail.types).toEqual(expect.arrayContaining(["username", "password", "target"]));
                 });
 
                 test('should fire the credentialsrequired event if some credentials are missing', function () {
@@ -2371,7 +2371,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     sendSecurity(22, client);
 
                     expect(spy).toHaveBeenCalledTimes(1);
-                    expect(spy.mock.calls[0][0].detail.types).toEqual(expect.arrayContaining(["username", "password", "target"]));
+                    expect((spy.mock.calls as any)[0][0].detail.types).toEqual(expect.arrayContaining(["username", "password", "target"]));
                 });
 
                 test('should send user and target separately', function () {
@@ -2396,8 +2396,8 @@ describe('Remote Frame Buffer protocol client', function () {
                     client._sock._websocket._getSentData();  // skip the security reply
                 });
 
-                function sendNumStrPairs(pairs, client) {
-                    const data = [];
+                function sendNumStrPairs(pairs: any, client: any) {
+                    const data: number[] = [];
                     push32(data, pairs.length);
 
                     for (let i = 0; i < pairs.length; i++) {
@@ -2425,7 +2425,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     sendNumStrPairs([[123, 'OTHR', 'SOMETHNG']], client);
 
                     expect(callback).toHaveBeenCalledTimes(1);
-                    expect(callback.mock.calls[0][0].detail.clean).toBe(false);
+                    expect((callback.mock.calls as any)[0][0].detail.clean).toBe(false);
                 });
 
                 test('should choose the notunnel tunnel type', function () {
@@ -2473,7 +2473,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     sendNumStrPairs([[23, 'stdv', 'badval__']], client);
 
                     expect(callback).toHaveBeenCalledTimes(1);
-                    expect(callback.mock.calls[0][0].detail.clean).toBe(false);
+                    expect((callback.mock.calls as any)[0][0].detail.clean).toBe(false);
                 });
             });
 
@@ -2490,7 +2490,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     client._sock._websocket._receiveData(new Uint8Array([0, 1]));
 
                     expect(callback).toHaveBeenCalledTimes(1);
-                    expect(callback.mock.calls[0][0].detail.clean).toBe(false);
+                    expect((callback.mock.calls as any)[0][0].detail.clean).toBe(false);
                 });
 
                 test('should fail if there are no supported subtypes', function () {
@@ -2504,7 +2504,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     client.addEventListener("disconnect", callback);
                     client._sock._websocket._receiveData(new Uint8Array([2, 0, 0, 0, 9, 0, 0, 1, 4]));
                     expect(callback).toHaveBeenCalledTimes(1);
-                    expect(callback.mock.calls[0][0].detail.clean).toBe(false);
+                    expect((callback.mock.calls as any)[0][0].detail.clean).toBe(false);
                 });
 
                 test('should support standard types', function () {
@@ -2516,7 +2516,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     // Subtype list
                     client._sock._websocket._receiveData(new Uint8Array([2, 0, 0, 0, 2, 0, 0, 1, 4]));
 
-                    let expectedResponse = [];
+                    let expectedResponse: number[] = [];
                     push32(expectedResponse, 2); // Chosen subtype.
 
                     expect(client._sock).toHaveSent(new Uint8Array(expectedResponse));
@@ -2538,7 +2538,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     push32(subtypes, 1);
                     client._sock._websocket._receiveData(new Uint8Array(subtypes));
 
-                    let expectedResponse = [];
+                    let expectedResponse: number[] = [];
                     push32(expectedResponse, 30); // Chosen subtype.
 
                     expect(client._sock).toHaveSent(new Uint8Array(expectedResponse));
@@ -2553,7 +2553,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     // Subtype list
                     client._sock._websocket._receiveData(new Uint8Array([2, 0, 0, 0, 19, 0, 0, 0, 2]));
 
-                    let expectedResponse = [];
+                    let expectedResponse: number[] = [];
                     push32(expectedResponse, 2); // Chosen subtype.
 
                     expect(client._sock).toHaveSent(new Uint8Array(expectedResponse));
@@ -2580,7 +2580,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
                     jest.advanceTimersByTime(0);
 
-                    const expectedResponse = [];
+                    const expectedResponse: number[] = [];
                     push32(expectedResponse, 8);
                     push32(expectedResponse, 8);
                     pushString(expectedResponse, 'username');
@@ -2597,7 +2597,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
                     jest.advanceTimersByTime(0);
 
-                    const expectedResponse = [];
+                    const expectedResponse: number[] = [];
                     push32(expectedResponse, 8);
                     push32(expectedResponse, 0);
                     pushString(expectedResponse, 'username');
@@ -2614,7 +2614,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
                     jest.advanceTimersByTime(0);
 
-                    const expectedResponse = [];
+                    const expectedResponse: number[] = [];
                     push32(expectedResponse, 300);
                     push32(expectedResponse, 300);
                     pushString(expectedResponse, 'a'.repeat(300));
@@ -2639,8 +2639,8 @@ describe('Remote Frame Buffer protocol client', function () {
 
                 client._sock._websocket._receiveData(new Uint8Array([0, 0, 0, 2]));
                 expect(spy).toHaveBeenCalledTimes(1);
-                expect(spy.mock.calls[0][0].detail.status).toBe(2);
-                expect('reason' in spy.mock.calls[0][0].detail).toBe(false);
+                expect((spy.mock.calls as any)[0][0].detail.status).toBe(2);
+                expect('reason' in (spy.mock.calls as any)[0][0].detail).toBe(false);
             });
 
             test('should not include reason in securityfailure event for versions < 3.8', function () {
@@ -2657,8 +2657,8 @@ describe('Remote Frame Buffer protocol client', function () {
 
                 client._sock._websocket._receiveData(new Uint8Array([0, 0, 0, 2]));
                 expect(spy).toHaveBeenCalledTimes(1);
-                expect(spy.mock.calls[0][0].detail.status).toBe(2);
-                expect('reason' in spy.mock.calls[0][0].detail).toBe(false);
+                expect((spy.mock.calls as any)[0][0].detail.status).toBe(2);
+                expect('reason' in (spy.mock.calls as any)[0][0].detail).toBe(false);
             });
         });
 
@@ -2682,8 +2682,8 @@ describe('Remote Frame Buffer protocol client', function () {
                                      32, 102, 97, 105, 108, 117, 114, 101];
                 client._sock._websocket._receiveData(new Uint8Array(failureData));
                 expect(spy).toHaveBeenCalledTimes(1);
-                expect(spy.mock.calls[0][0].detail.status).toBe(1);
-                expect(spy.mock.calls[0][0].detail.reason).toBe('such failure');
+                expect((spy.mock.calls as any)[0][0].detail.status).toBe(1);
+                expect((spy.mock.calls as any)[0][0].detail.reason).toBe('such failure');
             });
 
             test('should not include reason when length is zero in securityfailure event', function () {
@@ -2692,8 +2692,8 @@ describe('Remote Frame Buffer protocol client', function () {
                 const failureData = [0, 0, 0, 1, 0, 0, 0, 0];
                 client._sock._websocket._receiveData(new Uint8Array(failureData));
                 expect(spy).toHaveBeenCalledTimes(1);
-                expect(spy.mock.calls[0][0].detail.status).toBe(1);
-                expect('reason' in spy.mock.calls[0][0].detail).toBe(false);
+                expect((spy.mock.calls as any)[0][0].detail.status).toBe(1);
+                expect('reason' in (spy.mock.calls as any)[0][0].detail).toBe(false);
             });
         });
 
@@ -2728,14 +2728,14 @@ describe('Remote Frame Buffer protocol client', function () {
                 client._rfbInitState = 'ServerInitialisation';
             });
 
-            function sendServerInit(opts, client) {
-                const fullOpts = { width: 10, height: 12, bpp: 24, depth: 24, bigEndian: 0,
+            function sendServerInit(opts: any, client: any) {
+                const fullOpts: any = { width: 10, height: 12, bpp: 24, depth: 24, bigEndian: 0,
                                    trueColor: 1, redMax: 255, greenMax: 255, blueMax: 255,
                                    redShift: 16, greenShift: 8, blueShift: 0, name: 'a name' };
                 for (let opt in opts) {
                     fullOpts[opt] = opts[opt];
                 }
-                const data = [];
+                const data: number[] = [];
 
                 push16(data, fullOpts.width);
                 push16(data, fullOpts.height);
@@ -2759,8 +2759,8 @@ describe('Remote Frame Buffer protocol client', function () {
 
                 client._sock._websocket._receiveData(new Uint8Array(data));
 
-                const nameData = [];
-                let nameLen = [];
+                const nameData: number[] = [];
+                let nameLen: number[] = [];
                 pushString(nameData, fullOpts.name);
                 push32(nameLen, nameData.length);
 
@@ -2783,7 +2783,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
                 expect(client._fbName).toBe('som€ nam€');
                 expect(spy).toHaveBeenCalledTimes(1);
-                expect(spy.mock.calls[0][0].detail.name).toBe('som€ nam€');
+                expect((spy.mock.calls as any)[0][0].detail.name).toBe('som€ nam€');
             });
 
             test('should handle the extended init message of the tight encoding', function () {
@@ -2792,7 +2792,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 client._rfbTightVNC = true;
                 sendServerInit({}, client);
 
-                const tightData = [];
+                const tightData: number[] = [];
                 push16(tightData, 1);
                 push16(tightData, 2);
                 push16(tightData, 3);
@@ -2827,9 +2827,9 @@ describe('Remote Frame Buffer protocol client', function () {
                 });
 
                 afterEach(function () {
-                    RFB.messages.pixelFormat.mockRestore();
-                    RFB.messages.clientEncodings.mockRestore();
-                    RFB.messages.fbUpdateRequest.mockRestore();
+                    (RFB.messages.pixelFormat as any).mockRestore();
+                    (RFB.messages.clientEncodings as any).mockRestore();
+                    (RFB.messages.fbUpdateRequest as any).mockRestore();
                 });
 
                 // TODO(directxman12): test the various options in this configuration matrix
@@ -2840,8 +2840,8 @@ describe('Remote Frame Buffer protocol client', function () {
                     expect(RFB.messages.pixelFormat).toHaveBeenCalledWith(client._sock, 24, true, false);
                     // // expect(RFB.messages.pixelFormat).toHaveBeenCalledBefore(RFB.messages.clientEncodings); -- not supported in bun:test -- call order assertion, not directly supported in bun:test
                     expect(RFB.messages.clientEncodings).toHaveBeenCalledTimes(1);
-                    expect(RFB.messages.clientEncodings.mock.calls[0][1]).toContain(encodings.encodingTight);
-                    RFB.messages.clientEncodings.mock.calls[0][1].forEach((enc) => {
+                    expect((RFB.messages.clientEncodings as any).mock.calls[0][1]).toContain(encodings.encodingTight);
+                    (RFB.messages.clientEncodings as any).mock.calls[0][1].forEach((enc: any) => {
                         expect(typeof enc).toBe('number');
                         expect(Number.isInteger(enc)).toBe(true);
                     });
@@ -2857,8 +2857,8 @@ describe('Remote Frame Buffer protocol client', function () {
                     expect(RFB.messages.pixelFormat).toHaveBeenCalledWith(client._sock, 8, true, false);
                     // // expect(RFB.messages.pixelFormat).toHaveBeenCalledBefore(RFB.messages.clientEncodings); -- not supported in bun:test -- call order assertion, not directly supported in bun:test
                     expect(RFB.messages.clientEncodings).toHaveBeenCalledTimes(1);
-                    expect(RFB.messages.clientEncodings.mock.calls[0][1]).not.toContain(encodings.encodingTight);
-                    expect(RFB.messages.clientEncodings.mock.calls[0][1]).not.toContain(encodings.encodingHextile);
+                    expect((RFB.messages.clientEncodings as any).mock.calls[0][1]).not.toContain(encodings.encodingTight);
+                    expect((RFB.messages.clientEncodings as any).mock.calls[0][1]).not.toContain(encodings.encodingHextile);
                     // // expect(RFB.messages.clientEncodings).toHaveBeenCalledBefore(RFB.messages.fbUpdateRequest); -- not supported in bun:test -- call order assertion, not directly supported in bun:test
                     expect(RFB.messages.fbUpdateRequest).toHaveBeenCalledTimes(1);
                     expect(RFB.messages.fbUpdateRequest).toHaveBeenCalledWith(client._sock, false, 0, 0, 27, 32);
@@ -2875,7 +2875,7 @@ describe('Remote Frame Buffer protocol client', function () {
     });
 
     describe('Protocol message processing after completing initialization', function () {
-        let client;
+        let client: any;
 
         beforeEach(function () {
             client = makeRFB();
@@ -2887,9 +2887,9 @@ describe('Remote Frame Buffer protocol client', function () {
         describe('Framebuffer update handling', function () {
             test('should send an update request if there is sufficient data', function () {
                 let esock = new Websock();
-                let ews = new FakeWebSocket();
+                let ews: any = new FakeWebSocket('ws://localhost');
                 ews._open();
-                esock.attach(ews);
+                esock.attach(ews as any);
                 RFB.messages.fbUpdateRequest(esock, true, 0, 0, 640, 20);
                 let expected = ews._getSentData();
 
@@ -2906,9 +2906,9 @@ describe('Remote Frame Buffer protocol client', function () {
 
             test('should resume receiving an update if we previously did not have enough data', function () {
                 let esock = new Websock();
-                let ews = new FakeWebSocket();
+                let ews: any = new FakeWebSocket('ws://localhost');
                 ews._open();
-                esock.attach(ews);
+                esock.attach(ews as any);
                 RFB.messages.fbUpdateRequest(esock, true, 0, 0, 640, 20);
                 let expected = ews._getSentData();
 
@@ -2938,7 +2938,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 sendFbuMsg([rectInfo], [[]], client);
 
                 expect(callback).toHaveBeenCalledTimes(1);
-                expect(callback.mock.calls[0][0].detail.clean).toBe(false);
+                expect((callback.mock.calls as any)[0][0].detail.clean).toBe(false);
             });
 
             describe('Message encoding handlers', function () {
@@ -2970,8 +2970,8 @@ describe('Remote Frame Buffer protocol client', function () {
                         spyOn(client._display, 'resize');
                     });
 
-                    function makeScreenData(nrOfScreens) {
-                        const data = [];
+                    function makeScreenData(nrOfScreens: number) {
+                        const data: number[] = [];
                         push8(data, nrOfScreens);   // number-of-screens
                         push8(data, 0);               // padding
                         push16(data, 0);              // padding
@@ -3055,8 +3055,8 @@ describe('Remote Frame Buffer protocol client', function () {
                         const info = { x: 5, y: 7,
                                        width: 4, height: 4,
                                        encoding: -239};
-                        let rect = [];
-                        let expected = [];
+                        let rect: number[] = [];
+                        let expected: any = [];
 
                         for (let i = 0;i < info.width*info.height;i++) {
                             push32(rect, 0x11223300);
@@ -3079,7 +3079,7 @@ describe('Remote Frame Buffer protocol client', function () {
                         const info = { x: 0, y: 0,
                                        width: 0, height: 0,
                                        encoding: -239};
-                        const rect = [];
+                        const rect: number[] = [];
 
                         sendFbuMsg([info], [rect], client);
 
@@ -3091,8 +3091,8 @@ describe('Remote Frame Buffer protocol client', function () {
                         const info = { x: 5, y: 7,
                                        width: 4, height: 4,
                                        encoding: -239};
-                        let rect = [];
-                        let expected = [];
+                        let rect: number[] = [];
+                        let expected: any = [];
 
                         for (let i = 0;i < info.width*info.height;i++) {
                             push32(rect, 0x11223300);
@@ -3121,8 +3121,8 @@ describe('Remote Frame Buffer protocol client', function () {
                             const info = { x: 5, y: 7,
                                            width: 4, height: 4,
                                            encoding: -239};
-                            let rect = [];
-                            let expected = [];
+                            let rect: number[] = [];
+                            let expected: any = [];
 
                             for (let i = 0;i < info.width*info.height;i++) {
                                 push32(rect, 0x11223300);
@@ -3145,7 +3145,7 @@ describe('Remote Frame Buffer protocol client', function () {
                             const info = { x: 0, y: 0,
                                            width: 0, height: 0,
                                            encoding: -239};
-                            const rect = [];
+                            const rect: number[] = [];
                             const dot = RFB.cursors.dot;
 
                             sendFbuMsg([info], [rect], client);
@@ -3162,7 +3162,7 @@ describe('Remote Frame Buffer protocol client', function () {
                             const info = { x: 5, y: 7,
                                            width: 4, height: 4,
                                            encoding: -239};
-                            let rect = [];
+                            let rect: number[] = [];
                             const dot = RFB.cursors.dot;
 
                             for (let i = 0;i < info.width*info.height;i++) {
@@ -3195,7 +3195,7 @@ describe('Remote Frame Buffer protocol client', function () {
                                     0x00, 0xff, 0x00, 0,
                                     0x00, 0xff, 0x00, 0,
                                     0x00, 0x00, 0xff, 0];
-                        let rect = [];
+                        let rect: number[] = [];
                         push8(rect, 0);
                         push8(rect, 0);
 
@@ -3222,7 +3222,7 @@ describe('Remote Frame Buffer protocol client', function () {
                         let h = 23;
                         let data = [0x00, 0x00, 0xff, 0,
                                     0x00, 0xff, 0x00, 0];
-                        let rect = [];
+                        let rect: number[] = [];
 
                         push8(rect, 0);
                         push8(rect, 0);
@@ -3257,7 +3257,7 @@ describe('Remote Frame Buffer protocol client', function () {
                              0x11, 0x22, 0x33, 0x44,  //Opaque
                              0xff, 0xff, 0xff, 0x44]; //Inverted
 
-                        let rect = [];
+                        let rect: number[] = [];
                         push8(rect, 0); //cursor_type
                         push8(rect, 0); //padding
                         let hotx = 0;
@@ -3299,7 +3299,7 @@ describe('Remote Frame Buffer protocol client', function () {
                                     0x00, 0xff, 0x00, 0x22,
                                     0x00, 0xff, 0x00, 0x22,
                                     0x00, 0x00, 0xff, 0xee];
-                        let rect = [];
+                        let rect: number[] = [];
                         push8(rect, 1); //cursor_type
                         push8(rect, 0); //padding
                         let hotx = 0;
@@ -3332,7 +3332,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     });
 
                     test('should not update cursor when incorrect cursor type given', function () {
-                        let rect = [];
+                        let rect: number[] = [];
                         push8(rect, 3); // invalid cursor type
                         push8(rect, 0); // padding
 
@@ -3356,7 +3356,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 });
 
                 test('should handle the DesktopName pseudo-encoding', function () {
-                    let data = [];
+                    let data: number[] = [];
                     push32(data, 13);
                     pushString(data, "som€ nam€");
 
@@ -3367,19 +3367,19 @@ describe('Remote Frame Buffer protocol client', function () {
 
                     expect(client._fbName).toBe('som€ nam€');
                     expect(spy).toHaveBeenCalledTimes(1);
-                    expect(spy.mock.calls[0][0].detail.name).toBe('som€ nam€');
+                    expect((spy.mock.calls as any)[0][0].detail.name).toBe('som€ nam€');
                 });
 
             });
 
             describe('Caps Lock and Num Lock remote fixup', function () {
-                function sendLedStateUpdate(state) {
-                    let data = [];
+                function sendLedStateUpdate(state: number) {
+                    let data: number[] = [];
                     push8(data, state);
                     sendFbuMsg([{ x: 0, y: 0, width: 0, height: 0, encoding: -261 }], [data], client);
                 }
 
-                let client;
+                let client: any;
                 beforeEach(function () {
                     client = makeRFB();
                     spyOn(client, 'sendKey').mockImplementation(() => {});
@@ -3523,7 +3523,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 client._sock._websocket._receiveData(new Uint8Array([250, 0, 10, 1]));
                 expect(client._rfbXvpVer).toBe(10);
                 expect(spy).toHaveBeenCalledTimes(1);
-                expect(spy.mock.calls[0][0].detail.capabilities.power).toBe(true);
+                expect((spy.mock.calls as any)[0][0].detail.capabilities.power).toBe(true);
                 expect(client.capabilities.power).toBe(true);
             });
 
@@ -3534,7 +3534,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 client._sock._websocket._receiveData(new Uint8Array([250, 0, 10, 237]));
 
                 expect(callback).toHaveBeenCalledTimes(1);
-                expect(callback.mock.calls[0][0].detail.clean).toBe(false);
+                expect((callback.mock.calls as any)[0][0].detail.clean).toBe(false);
             });
         });
 
@@ -3549,7 +3549,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
                 client._sock._websocket._receiveData(new Uint8Array(data));
                 expect(spy).toHaveBeenCalledTimes(1);
-                expect(spy.mock.calls[0][0].detail.text).toBe(expectedStr);
+                expect((spy.mock.calls as any)[0][0].detail.text).toBe(expectedStr);
             });
         });
 
@@ -3561,7 +3561,7 @@ describe('Remote Frame Buffer protocol client', function () {
                 });
 
                 afterEach(function () {
-                    RFB.messages.extendedClipboardCaps.mockRestore();
+                    (RFB.messages.extendedClipboardCaps as any).mockRestore();
                 });
 
                 test('should update capabilities when receiving a Caps message', function () {
@@ -3622,7 +3622,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
                         client._sock._websocket._receiveData(new Uint8Array(data));
                         expect(spy).toHaveBeenCalledTimes(1);
-                        expect(spy.mock.calls[0][0].detail.text).toBe(expectedData);
+                        expect((spy.mock.calls as any)[0][0].detail.text).toBe(expectedData);
                         client.removeEventListener("clipboard", spy);
                     });
 
@@ -3646,7 +3646,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
                         client._sock._websocket._receiveData(new Uint8Array(data));
                         expect(spy).toHaveBeenCalledTimes(1);
-                        expect(spy.mock.calls[0][0].detail.text).toBe(expectedData);
+                        expect((spy.mock.calls as any)[0][0].detail.text).toBe(expectedData);
                         client.removeEventListener("clipboard", spy);
                     });
 
@@ -3670,7 +3670,7 @@ describe('Remote Frame Buffer protocol client', function () {
 
                         client._sock._websocket._receiveData(new Uint8Array(data));
                         expect(spy).toHaveBeenCalledTimes(1);
-                        expect(spy.mock.calls[0][0].detail.text).toBe(expectedData);
+                        expect((spy.mock.calls as any)[0][0].detail.text).toBe(expectedData);
                         client.removeEventListener("clipboard", spy);
                     });
 
@@ -3682,7 +3682,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     });
 
                     afterEach(function () {
-                        RFB.messages.extendedClipboardRequest.mockRestore();
+                        (RFB.messages.extendedClipboardRequest as any).mockRestore();
                     });
 
                     test('should make a request with supported formats when receiving a notify message', function () {
@@ -3705,7 +3705,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     });
 
                     afterEach(function () {
-                        RFB.messages.extendedClipboardNotify.mockRestore();
+                        (RFB.messages.extendedClipboardNotify as any).mockRestore();
                     });
 
                     test('should send an empty Notify when receiving a Peek and no excisting clipboard data', function () {
@@ -3713,7 +3713,7 @@ describe('Remote Frame Buffer protocol client', function () {
                         const flags = [0x04, 0x00, 0x00, 0x00];
                         push32(data, toUnsigned32bit(-4));
                         data = data.concat(flags);
-                        let expectedData = [];
+                        let expectedData: number[] = [];
 
                         client._sock._websocket._receiveData(new Uint8Array(data));
 
@@ -3731,7 +3731,7 @@ describe('Remote Frame Buffer protocol client', function () {
                         // Needed to have clipboard data to read.
                         // This will trigger a call to Notify, reset history
                         client.clipboardPasteFrom("HejHej");
-                        RFB.messages.extendedClipboardNotify.mockClear();
+                        (RFB.messages.extendedClipboardNotify as any).mockClear();
 
                         client._sock._websocket._receiveData(new Uint8Array(data));
 
@@ -3746,7 +3746,7 @@ describe('Remote Frame Buffer protocol client', function () {
                     });
 
                     afterEach(function () {
-                        RFB.messages.extendedClipboardProvide.mockRestore();
+                        (RFB.messages.extendedClipboardProvide as any).mockRestore();
                     });
 
                     test('should send a Provide message with supported formats when receiving a Request', function () {
@@ -3780,9 +3780,9 @@ describe('Remote Frame Buffer protocol client', function () {
             const payload = "foo\x00ab9";
 
             let esock = new Websock();
-            let ews = new FakeWebSocket();
+            let ews: any = new FakeWebSocket('ws://localhost');
             ews._open();
-            esock.attach(ews);
+            esock.attach(ews as any);
 
             // ClientFence and ServerFence are identical in structure
             RFB.messages.clientFence(esock, (1<<0) | (1<<1), payload);
@@ -3806,9 +3806,9 @@ describe('Remote Frame Buffer protocol client', function () {
 
         test('should enable continuous updates on first EndOfContinousUpdates', function () {
             let esock = new Websock();
-            let ews = new FakeWebSocket();
+            let ews: any = new FakeWebSocket('ws://localhost');
             ews._open();
-            esock.attach(ews);
+            esock.attach(ews as any);
             RFB.messages.enableContinuousUpdates(esock, true, 0, 0, 640, 20);
             let expected = ews._getSentData();
 
@@ -3831,9 +3831,9 @@ describe('Remote Frame Buffer protocol client', function () {
 
         test('should update continuous updates on resize', function () {
             let esock = new Websock();
-            let ews = new FakeWebSocket();
+            let ews: any = new FakeWebSocket('ws://localhost');
             ews._open();
-            esock.attach(ews);
+            esock.attach(ews as any);
             RFB.messages.enableContinuousUpdates(esock, true, 0, 0, 90, 700);
             let expected = ews._getSentData();
 
@@ -3855,16 +3855,16 @@ describe('Remote Frame Buffer protocol client', function () {
             client._sock._websocket._receiveData(new Uint8Array([87]));
 
             expect(callback).toHaveBeenCalledTimes(1);
-            expect(callback.mock.calls[0][0].detail.clean).toBe(false);
+            expect((callback.mock.calls as any)[0][0].detail.clean).toBe(false);
         });
     });
 
     describe('Asynchronous events', function () {
-        let client;
-        let pointerEvent;
-        let extendedPointerEvent;
-        let keyEvent;
-        let qemuKeyEvent;
+        let client: any;
+        let pointerEvent: any;
+        let extendedPointerEvent: any;
+        let keyEvent: any;
+        let qemuKeyEvent: any;
 
         beforeEach(function () {
             client = makeRFB();
@@ -4137,7 +4137,7 @@ describe('Remote Frame Buffer protocol client', function () {
         });
 
         describe('Wheel events', function () {
-            function sendWheelEvent(x, y, dx, dy, mode=0, buttons=0) {
+            function sendWheelEvent(x: number, y: number, dx: number, dy: number, mode=0, buttons=0) {
                 let pos = elementToClient(x, y, client);
                 let ev;
 
@@ -4265,9 +4265,9 @@ describe('Remote Frame Buffer protocol client', function () {
         describe('Keyboard events', function () {
             test('should send a key message on a key press', function () {
                 let esock = new Websock();
-                let ews = new FakeWebSocket();
+                let ews: any = new FakeWebSocket('ws://localhost');
                 ews._open();
-                esock.attach(ews);
+                esock.attach(ews as any);
                 RFB.messages.keyEvent(esock, 0x41, 1);
                 let expected = ews._getSentData();
 
@@ -5019,7 +5019,7 @@ describe('Remote Frame Buffer protocol client', function () {
     describe('Quality level setting', function () {
         const defaultQuality = 6;
 
-        let client;
+        let client: any;
 
         beforeEach(function () {
             client = makeRFB();
@@ -5027,7 +5027,7 @@ describe('Remote Frame Buffer protocol client', function () {
         });
 
         afterEach(function () {
-            RFB.messages.clientEncodings.mockRestore();
+            (RFB.messages.clientEncodings as any).mockRestore();
         });
 
         test(`should equal ${defaultQuality} by default`, function () {
@@ -5038,22 +5038,22 @@ describe('Remote Frame Buffer protocol client', function () {
             client.qualityLevel = '1';
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.qualityLevel = 1.5;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.qualityLevel = null;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.qualityLevel = undefined;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.qualityLevel = {};
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
@@ -5063,7 +5063,7 @@ describe('Remote Frame Buffer protocol client', function () {
             client.qualityLevel = -1;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.qualityLevel = 10;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
@@ -5076,7 +5076,7 @@ describe('Remote Frame Buffer protocol client', function () {
             client.qualityLevel = newQuality;
             expect(client.qualityLevel).toBe(newQuality);
             expect(RFB.messages.clientEncodings).toHaveBeenCalledTimes(1);
-            expect(RFB.messages.clientEncodings.mock.calls[0][1]).toContain(encodings.pseudoEncodingQualityLevel0 + newQuality);
+            expect((RFB.messages.clientEncodings as any).mock.calls[0][1]).toContain(encodings.pseudoEncodingQualityLevel0 + newQuality);
         });
 
         test('should not send clientEncodings if quality is the same', function () {
@@ -5085,9 +5085,9 @@ describe('Remote Frame Buffer protocol client', function () {
             newQuality = 2;
             client.qualityLevel = newQuality;
             expect(RFB.messages.clientEncodings).toHaveBeenCalledTimes(1);
-            expect(RFB.messages.clientEncodings.mock.calls[0][1]).toContain(encodings.pseudoEncodingQualityLevel0 + newQuality);
+            expect((RFB.messages.clientEncodings as any).mock.calls[0][1]).toContain(encodings.pseudoEncodingQualityLevel0 + newQuality);
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.qualityLevel = newQuality;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
@@ -5101,27 +5101,27 @@ describe('Remote Frame Buffer protocol client', function () {
             client.qualityLevel = newQuality;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client._rfbConnectionState = 'connnecting';
             newQuality = 6;
             client.qualityLevel = newQuality;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client._rfbConnectionState = 'connected';
             newQuality = 5;
             client.qualityLevel = newQuality;
             expect(RFB.messages.clientEncodings).toHaveBeenCalledTimes(1);
-            expect(RFB.messages.clientEncodings.mock.calls[0][1]).toContain(encodings.pseudoEncodingQualityLevel0 + newQuality);
+            expect((RFB.messages.clientEncodings as any).mock.calls[0][1]).toContain(encodings.pseudoEncodingQualityLevel0 + newQuality);
         });
     });
 
     describe('Compression level setting', function () {
         const defaultCompression = 2;
 
-        let client;
+        let client: any;
 
         beforeEach(function () {
             client = makeRFB();
@@ -5129,7 +5129,7 @@ describe('Remote Frame Buffer protocol client', function () {
         });
 
         afterEach(function () {
-            RFB.messages.clientEncodings.mockRestore();
+            (RFB.messages.clientEncodings as any).mockRestore();
         });
 
         test(`should equal ${defaultCompression} by default`, function () {
@@ -5140,22 +5140,22 @@ describe('Remote Frame Buffer protocol client', function () {
             client.compressionLevel = '1';
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.compressionLevel = 1.5;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.compressionLevel = null;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.compressionLevel = undefined;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.compressionLevel = {};
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
@@ -5165,7 +5165,7 @@ describe('Remote Frame Buffer protocol client', function () {
             client.compressionLevel = -1;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.compressionLevel = 10;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
@@ -5178,7 +5178,7 @@ describe('Remote Frame Buffer protocol client', function () {
             client.compressionLevel = newCompression;
             expect(client.compressionLevel).toBe(newCompression);
             expect(RFB.messages.clientEncodings).toHaveBeenCalledTimes(1);
-            expect(RFB.messages.clientEncodings.mock.calls[0][1]).toContain(encodings.pseudoEncodingCompressLevel0 + newCompression);
+            expect((RFB.messages.clientEncodings as any).mock.calls[0][1]).toContain(encodings.pseudoEncodingCompressLevel0 + newCompression);
         });
 
         test('should not send clientEncodings if compression is the same', function () {
@@ -5187,9 +5187,9 @@ describe('Remote Frame Buffer protocol client', function () {
             newCompression = 9;
             client.compressionLevel = newCompression;
             expect(RFB.messages.clientEncodings).toHaveBeenCalledTimes(1);
-            expect(RFB.messages.clientEncodings.mock.calls[0][1]).toContain(encodings.pseudoEncodingCompressLevel0 + newCompression);
+            expect((RFB.messages.clientEncodings as any).mock.calls[0][1]).toContain(encodings.pseudoEncodingCompressLevel0 + newCompression);
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client.compressionLevel = newCompression;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
@@ -5203,32 +5203,32 @@ describe('Remote Frame Buffer protocol client', function () {
             client.compressionLevel = newCompression;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client._rfbConnectionState = 'connnecting';
             newCompression = 6;
             client.compressionLevel = newCompression;
             expect(RFB.messages.clientEncodings).not.toHaveBeenCalled();
 
-            RFB.messages.clientEncodings.mockClear();
+            (RFB.messages.clientEncodings as any).mockClear();
 
             client._rfbConnectionState = 'connected';
             newCompression = 5;
             client.compressionLevel = newCompression;
             expect(RFB.messages.clientEncodings).toHaveBeenCalledTimes(1);
-            expect(RFB.messages.clientEncodings.mock.calls[0][1]).toContain(encodings.pseudoEncodingCompressLevel0 + newCompression);
+            expect((RFB.messages.clientEncodings as any).mock.calls[0][1]).toContain(encodings.pseudoEncodingCompressLevel0 + newCompression);
         });
     });
 });
 
 describe('RFB messages', function () {
-    let sock;
+    let sock: any;
 
     beforeEach(function () {
-        let websock = new FakeWebSocket();
+        let websock = new FakeWebSocket('ws://localhost');
         websock._open();
         sock = new Websock();
-        sock.attach(websock);
+        sock.attach(websock as any);
     });
 
     describe('Input events', function () {
@@ -5331,7 +5331,7 @@ describe('RFB messages', function () {
                                                0xFF, 0xFF, 0xFF, 0xFC,
                                                0x02, 0x00, 0x00, 0x01]);
 
-            RFB.messages.extendedClipboardRequest(sock, formats);
+            RFB.messages.extendedClipboardRequest(sock, formats as any);
 
             expect(sock).toHaveSent(expectedData);
         });
@@ -5342,7 +5342,7 @@ describe('RFB messages', function () {
                                                0xFF, 0xFF, 0xFF, 0xFC,
                                                0x08, 0x00, 0x00, 0x01]);
 
-            RFB.messages.extendedClipboardNotify(sock, formats);
+            RFB.messages.extendedClipboardNotify(sock, formats as any);
 
             expect(sock).toHaveSent(expectedData);
         });
@@ -5522,7 +5522,7 @@ describe('RFB messages', function () {
 
     describe('Pixel format', function () {
         test('should send correct data for normal depth', function () {
-            RFB.messages.pixelFormat(sock, 24, true);
+            RFB.messages.pixelFormat(sock, 24, true, false);
             let expected =
                 [ 0, 0, 0, 0, 32, 24, 0, 1,
                   0, 255, 0, 255, 0, 255, 0, 8, 16, 0, 0, 0 ];
@@ -5530,7 +5530,7 @@ describe('RFB messages', function () {
         });
 
         test('should send correct data for low depth', function () {
-            RFB.messages.pixelFormat(sock, 8, true);
+            RFB.messages.pixelFormat(sock, 8, true, false);
             let expected =
                 [ 0, 0, 0, 0, 8, 8, 0, 1,
                   0, 3, 0, 3, 0, 3, 0, 2, 4, 0, 0, 0 ];

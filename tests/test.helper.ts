@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 import keysyms from '../core/input/keysymdef.ts';
 import * as KeyboardUtil from "../core/input/util.ts";
@@ -7,23 +6,23 @@ describe('Helpers', () => {
 
     describe('keysyms.lookup', () => {
         test('should map ASCII characters to keysyms', () => {
-            expect(keysyms.lookup('a'.charCodeAt())).toBe(0x61);
-            expect(keysyms.lookup('A'.charCodeAt())).toBe(0x41);
+            expect(keysyms.lookup('a'.charCodeAt(0))).toBe(0x61);
+            expect(keysyms.lookup('A'.charCodeAt(0))).toBe(0x41);
         });
         test('should map Latin-1 characters to keysyms', () => {
-            expect(keysyms.lookup('\u00f8'.charCodeAt())).toBe(0xf8);
+            expect(keysyms.lookup('\u00f8'.charCodeAt(0))).toBe(0xf8);
 
-            expect(keysyms.lookup('\u00e9'.charCodeAt())).toBe(0xe9);
+            expect(keysyms.lookup('\u00e9'.charCodeAt(0))).toBe(0xe9);
         });
         test('should map characters that are in Windows-1252 but not in Latin-1 to keysyms', () => {
-            expect(keysyms.lookup('\u0160'.charCodeAt())).toBe(0x01a9);
+            expect(keysyms.lookup('\u0160'.charCodeAt(0))).toBe(0x01a9);
         });
         test('should map characters which aren\'t in Latin1 *or* Windows-1252 to keysyms', () => {
-            expect(keysyms.lookup('\u0169'.charCodeAt())).toBe(0x03fd);
+            expect(keysyms.lookup('\u0169'.charCodeAt(0))).toBe(0x03fd);
         });
         test('should map unknown codepoints to the Unicode range', () => {
-            expect(keysyms.lookup('\n'.charCodeAt())).toBe(0x100000a);
-            expect(keysyms.lookup('\u262D'.charCodeAt())).toBe(0x100262d);
+            expect(keysyms.lookup('\n'.charCodeAt(0))).toBe(0x100000a);
+            expect(keysyms.lookup('\u262D'.charCodeAt(0))).toBe(0x100262d);
         });
         // This requires very recent versions of most browsers... skipping for now
         test.skip('should map UCS-4 codepoints to the Unicode range', () => {
@@ -58,11 +57,11 @@ describe('Helpers', () => {
             expect(KeyboardUtil.getKeycode({keyCode: 0x23, location: 3})).toBe('Numpad1');
         });
         test('should return Unidentified when it cannot map the keyCode', () => {
-            expect(KeyboardUtil.getKeycode({keycode: 0x42})).toBe('Unidentified');
+            expect(KeyboardUtil.getKeycode({keycode: 0x42} as any)).toBe('Unidentified');
         });
 
         describe('Fix Meta on macOS', () => {
-            let origNavigator;
+            let origNavigator: PropertyDescriptor | undefined;
             beforeEach(() => {
                 // window.navigator is a protected read-only property in many
                 // environments, so we need to redefine it whilst running these
@@ -70,10 +69,10 @@ describe('Helpers', () => {
                 origNavigator = Object.getOwnPropertyDescriptor(window, "navigator");
 
                 Object.defineProperty(window, "navigator", {value: {}});
-                window.navigator.platform = "Mac x86_64";
+                (window.navigator as any).platform = "Mac x86_64";
             });
             afterEach(() => {
-                Object.defineProperty(window, "navigator", origNavigator);
+                Object.defineProperty(window, "navigator", origNavigator!);
             });
 
             test('should respect ContextMenu on modern browser', () => {
@@ -87,7 +86,7 @@ describe('Helpers', () => {
 
     describe('getKey', () => {
         test('should prefer key', () => {
-            expect(KeyboardUtil.getKey({key: 'a', charCode: '\u0160'.charCodeAt(), keyCode: 0x42, which: 0x43})).toBe('a');
+            expect(KeyboardUtil.getKey({key: 'a', charCode: '\u0160'.charCodeAt(0), keyCode: 0x42} as any)).toBe('a');
         });
         test('should map legacy values', () => {
             expect(KeyboardUtil.getKey({key: 'OS'})).toBe('Meta');
@@ -106,12 +105,12 @@ describe('Helpers', () => {
             expect(KeyboardUtil.getKey({code: 'Numpad1'})).toBe('Unidentified');
         });
         test('should use charCode if no key', () => {
-            expect(KeyboardUtil.getKey({charCode: '\u0160'.charCodeAt(), keyCode: 0x42, which: 0x43})).toBe('\u0160');
+            expect(KeyboardUtil.getKey({charCode: '\u0160'.charCodeAt(0), keyCode: 0x42} as any)).toBe('\u0160');
             // Broken Oculus browser
-            expect(KeyboardUtil.getKey({charCode: '\u0160'.charCodeAt(), keyCode: 0x42, which: 0x43, key: 'Unidentified'})).toBe('\u0160');
+            expect(KeyboardUtil.getKey({charCode: '\u0160'.charCodeAt(0), keyCode: 0x42, key: 'Unidentified'} as any)).toBe('\u0160');
         });
         test('should return Unidentified when it cannot map the key', () => {
-            expect(KeyboardUtil.getKey({keycode: 0x42})).toBe('Unidentified');
+            expect(KeyboardUtil.getKey({keycode: 0x42} as any)).toBe('Unidentified');
         });
     });
 
@@ -181,7 +180,7 @@ describe('Helpers', () => {
         });
 
         describe('Japanese IM keys on Windows', () => {
-            let origNavigator;
+            let origNavigator: PropertyDescriptor | undefined;
             beforeEach(() => {
                 // window.navigator is a protected read-only property in many
                 // environments, so we need to redefine it whilst running these
@@ -189,14 +188,14 @@ describe('Helpers', () => {
                 origNavigator = Object.getOwnPropertyDescriptor(window, "navigator");
 
                 Object.defineProperty(window, "navigator", {value: {}});
-                window.navigator.platform = "Windows";
+                (window.navigator as any).platform = "Windows";
             });
 
             afterEach(() => {
-                Object.defineProperty(window, "navigator", origNavigator);
+                Object.defineProperty(window, "navigator", origNavigator!);
             });
 
-            const keys = { 'Zenkaku': 0xff2a, 'Hankaku': 0xff2a,
+            const keys: Record<string, number> = { 'Zenkaku': 0xff2a, 'Hankaku': 0xff2a,
                            'Romaji': 0xff24, 'KanaMode': 0xff24 };
             for (let [key, keysym] of Object.entries(keys)) {
                 test(`should fake combined key for ${key} on Windows`, () => {

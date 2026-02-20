@@ -1,14 +1,13 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, mock, spyOn, jest } from "bun:test";
 
 import Keyboard from '../core/input/keyboard.ts';
 
 // Helper: check that a mock was called with specific leading args
 // (ignoring trailing args like numLock/capsLock)
-function expectCalledWith(mockFn, ...args) {
+function expectCalledWith(mockFn: any, ...args: any[]) {
     const calls = mockFn.mock.calls;
-    const found = calls.some(call =>
-        args.every((arg, i) => call[i] === arg)
+    const found = calls.some((call: any[]) =>
+        args.every((arg: any, i: number) => call[i] === arg)
     );
     if (!found) {
         throw new Error(
@@ -22,14 +21,14 @@ describe('Key event handling', function () {
 
     // The real KeyboardEvent constructor might not work everywhere we
     // want to run these tests
-    function keyevent(typeArg, KeyboardEventInit) {
-        const e = { type: typeArg };
+    function keyevent(typeArg: string, KeyboardEventInit: Record<string, any>): any {
+        const e: Record<string, any> = { type: typeArg };
         for (let key in KeyboardEventInit) {
             e[key] = KeyboardEventInit[key];
         }
         e.stopPropagation = mock(() => {});
         e.preventDefault = mock(() => {});
-        e.getModifierState = function (key) {
+        e.getModifierState = function (key: string) {
             return e[key];
         };
 
@@ -38,7 +37,7 @@ describe('Key event handling', function () {
 
     describe('Decode keyboard events', function () {
         test('should decode keydown events', function () {
-            return new Promise((resolve) => {
+            return new Promise<void>((resolve) => {
                 const kbd = new Keyboard(document);
                 kbd.onkeyevent = (keysym, code, down) => {
                     expect(keysym).toBe(0x61);
@@ -50,7 +49,7 @@ describe('Key event handling', function () {
             });
         });
         test('should decode keyup events', function () {
-            return new Promise((resolve) => {
+            return new Promise<void>((resolve) => {
                 let calls = 0;
                 const kbd = new Keyboard(document);
                 kbd.onkeyevent = (keysym, code, down) => {
@@ -69,7 +68,7 @@ describe('Key event handling', function () {
 
     describe('Fake keyup', function () {
         test('should fake keyup events for virtual keyboards', function () {
-            return new Promise((resolve) => {
+            return new Promise<void>((resolve) => {
                 let count = 0;
                 const kbd = new Keyboard(document);
                 kbd.onkeyevent = (keysym, code, down) => {
@@ -93,7 +92,7 @@ describe('Key event handling', function () {
 
     describe('Track key state', function () {
         test('should send release using the same keysym as the press', function () {
-            return new Promise((resolve) => {
+            return new Promise<void>((resolve) => {
                 const kbd = new Keyboard(document);
                 kbd.onkeyevent = (keysym, code, down) => {
                     expect(keysym).toBe(0x61);
@@ -128,7 +127,7 @@ describe('Key event handling', function () {
 
         describe('Legacy events', function () {
             test('should track keys using keyCode if no code', function () {
-                return new Promise((resolve) => {
+                return new Promise<void>((resolve) => {
                     const kbd = new Keyboard(document);
                     kbd.onkeyevent = (keysym, code, down) => {
                         expect(keysym).toBe(0x61);
@@ -150,7 +149,7 @@ describe('Key event handling', function () {
                 kbd._handleKeyDown(keyevent('keydown', {keyCode: 229, key: 'a'}));
             });
             test('should track keys using keyIdentifier if no code', function () {
-                return new Promise((resolve) => {
+                return new Promise<void>((resolve) => {
                     const kbd = new Keyboard(document);
                     kbd.onkeyevent = (keysym, code, down) => {
                         expect(keysym).toBe(0x61);
@@ -167,14 +166,14 @@ describe('Key event handling', function () {
     });
 
     describe('Shuffle modifiers on macOS', function () {
-        let origNavigator;
+        let origNavigator: PropertyDescriptor | undefined;
         beforeEach(function () {
             origNavigator = Object.getOwnPropertyDescriptor(window, "navigator");
             Object.defineProperty(window, "navigator", {value: {}});
-            window.navigator.platform = "Mac x86_64";
+            (window.navigator as any).platform = "Mac x86_64";
         });
         afterEach(function () {
-            Object.defineProperty(window, "navigator", origNavigator);
+            Object.defineProperty(window, "navigator", origNavigator!);
         });
 
         test('should change Alt to AltGraph', function () {
@@ -197,7 +196,7 @@ describe('Key event handling', function () {
             expect(count).toBe(2);
         });
         test('should change left Super to Alt', function () {
-            return new Promise((resolve) => {
+            return new Promise<void>((resolve) => {
                 const kbd = new Keyboard(document);
                 kbd.onkeyevent = (keysym, code, down) => {
                     expect(keysym).toBe(0xFFE9);
@@ -208,7 +207,7 @@ describe('Key event handling', function () {
             });
         });
         test('should change right Super to left Super', function () {
-            return new Promise((resolve) => {
+            return new Promise<void>((resolve) => {
                 const kbd = new Keyboard(document);
                 kbd.onkeyevent = (keysym, code, down) => {
                     expect(keysym).toBe(0xFFEB);
@@ -221,7 +220,7 @@ describe('Key event handling', function () {
     });
 
     describe('Meta key combination on iOS and macOS', function () {
-        let origNavigator;
+        let origNavigator: PropertyDescriptor | undefined;
         beforeEach(function () {
             origNavigator = Object.getOwnPropertyDescriptor(window, "navigator");
             Object.defineProperty(window, "navigator", {value: {}});
@@ -229,43 +228,43 @@ describe('Key event handling', function () {
 
         afterEach(function () {
             if (origNavigator !== undefined) {
-                Object.defineProperty(window, "navigator", origNavigator);
+                Object.defineProperty(window, "navigator", origNavigator!);
             }
         });
 
         test('should send keyup when meta key is pressed on iOS', function () {
-            window.navigator.platform = "iPad";
+            (window.navigator as any).platform = "iPad";
             const kbd = new Keyboard(document);
             kbd.onkeyevent = mock(() => {});
 
             kbd._handleKeyDown(keyevent('keydown', {code: 'MetaRight', key: 'Meta', location: 2, metaKey: true}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
 
             kbd._handleKeyDown(keyevent('keydown', {code: 'KeyA', key: 'a', metaKey: true}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
             expectCalledWith(kbd.onkeyevent, 0x61, "KeyA", true);
             expectCalledWith(kbd.onkeyevent, 0x61, "KeyA", false);
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
 
             kbd._handleKeyUp(keyevent('keyup', {code: 'MetaRight', key: 'Meta', location: 2, metaKey: true}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
         });
 
         test('should send keyup when meta key is pressed on macOS', function () {
-            window.navigator.platform = "Mac";
+            (window.navigator as any).platform = "Mac";
             const kbd = new Keyboard(document);
             kbd.onkeyevent = mock(() => {});
 
             kbd._handleKeyDown(keyevent('keydown', {code: 'MetaRight', key: 'Meta', location: 2, metaKey: true}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
 
             kbd._handleKeyDown(keyevent('keydown', {code: 'KeyA', key: 'a', metaKey: true}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
             expectCalledWith(kbd.onkeyevent, 0x61, "KeyA", true);
             expectCalledWith(kbd.onkeyevent, 0x61, "KeyA", false);
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
 
             kbd._handleKeyUp(keyevent('keyup', {code: 'MetaRight', key: 'Meta', location: 2, metaKey: true}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
@@ -273,70 +272,70 @@ describe('Key event handling', function () {
     });
 
     describe('Caps Lock on iOS and macOS', function () {
-        let origNavigator;
+        let origNavigator: PropertyDescriptor | undefined;
         beforeEach(function () {
             origNavigator = Object.getOwnPropertyDescriptor(window, "navigator");
             Object.defineProperty(window, "navigator", {value: {}});
         });
 
         afterEach(function () {
-            Object.defineProperty(window, "navigator", origNavigator);
+            Object.defineProperty(window, "navigator", origNavigator!);
         });
 
         test('should toggle caps lock on key press on iOS', function () {
-            window.navigator.platform = "iPad";
+            (window.navigator as any).platform = "iPad";
             const kbd = new Keyboard(document);
             kbd.onkeyevent = mock(() => {});
             kbd._handleKeyDown(keyevent('keydown', {code: 'CapsLock', key: 'CapsLock'}));
 
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
-            expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([0xFFE5, "CapsLock", true]);
-            expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([0xFFE5, "CapsLock", false]);
+            expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([0xFFE5, "CapsLock", true]);
+            expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([0xFFE5, "CapsLock", false]);
         });
 
         test('should toggle caps lock on key press on mac', function () {
-            window.navigator.platform = "Mac";
+            (window.navigator as any).platform = "Mac";
             const kbd = new Keyboard(document);
             kbd.onkeyevent = mock(() => {});
             kbd._handleKeyDown(keyevent('keydown', {code: 'CapsLock', key: 'CapsLock'}));
 
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
-            expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([0xFFE5, "CapsLock", true]);
-            expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([0xFFE5, "CapsLock", false]);
+            expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([0xFFE5, "CapsLock", true]);
+            expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([0xFFE5, "CapsLock", false]);
         });
 
         test('should toggle caps lock on key release on iOS', function () {
-            window.navigator.platform = "iPad";
+            (window.navigator as any).platform = "iPad";
             const kbd = new Keyboard(document);
             kbd.onkeyevent = mock(() => {});
             kbd._handleKeyUp(keyevent('keyup', {code: 'CapsLock', key: 'CapsLock'}));
 
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
-            expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([0xFFE5, "CapsLock", true]);
-            expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([0xFFE5, "CapsLock", false]);
+            expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([0xFFE5, "CapsLock", true]);
+            expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([0xFFE5, "CapsLock", false]);
         });
 
         test('should toggle caps lock on key release on mac', function () {
-            window.navigator.platform = "Mac";
+            (window.navigator as any).platform = "Mac";
             const kbd = new Keyboard(document);
             kbd.onkeyevent = mock(() => {});
             kbd._handleKeyUp(keyevent('keyup', {code: 'CapsLock', key: 'CapsLock'}));
 
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
-            expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([0xFFE5, "CapsLock", true]);
-            expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([0xFFE5, "CapsLock", false]);
+            expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([0xFFE5, "CapsLock", true]);
+            expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([0xFFE5, "CapsLock", false]);
         });
     });
 
     describe('Modifier status info', function () {
-        let origNavigator;
+        let origNavigator: PropertyDescriptor | undefined;
         beforeEach(function () {
             origNavigator = Object.getOwnPropertyDescriptor(window, "navigator");
             Object.defineProperty(window, "navigator", {value: {}});
         });
 
         afterEach(function () {
-            Object.defineProperty(window, "navigator", origNavigator);
+            Object.defineProperty(window, "navigator", origNavigator!);
         });
 
         test('should provide caps lock state', function () {
@@ -345,7 +344,7 @@ describe('Key event handling', function () {
             kbd._handleKeyDown(keyevent('keydown', {code: 'KeyA', key: 'A', NumLock: false, CapsLock: true}));
 
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
-            expect(kbd.onkeyevent.mock.calls[0]).toEqual([0x41, "KeyA", true, false, true]);
+            expect((kbd.onkeyevent as any).mock.calls[0]).toEqual([0x41, "KeyA", true, false, true]);
         });
 
         test('should provide num lock state', function () {
@@ -354,30 +353,30 @@ describe('Key event handling', function () {
             kbd._handleKeyDown(keyevent('keydown', {code: 'KeyA', key: 'A', NumLock: true, CapsLock: false}));
 
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
-            expect(kbd.onkeyevent.mock.calls[0]).toEqual([0x41, "KeyA", true, true, false]);
+            expect((kbd.onkeyevent as any).mock.calls[0]).toEqual([0x41, "KeyA", true, true, false]);
         });
 
         test('should have no num lock state on mac', function () {
-            window.navigator.platform = "Mac";
+            (window.navigator as any).platform = "Mac";
             const kbd = new Keyboard(document);
             kbd.onkeyevent = mock(() => {});
             kbd._handleKeyDown(keyevent('keydown', {code: 'KeyA', key: 'A', NumLock: false, CapsLock: true}));
 
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
-            expect(kbd.onkeyevent.mock.calls[0]).toEqual([0x41, "KeyA", true, null, true]);
+            expect((kbd.onkeyevent as any).mock.calls[0]).toEqual([0x41, "KeyA", true, null, true]);
         });
     });
 
     describe('Japanese IM keys on Windows', function () {
-        let origNavigator;
+        let origNavigator: PropertyDescriptor | undefined;
         beforeEach(function () {
             origNavigator = Object.getOwnPropertyDescriptor(window, "navigator");
             Object.defineProperty(window, "navigator", {value: {}});
-            window.navigator.platform = "Windows";
+            (window.navigator as any).platform = "Windows";
         });
 
         afterEach(function () {
-            Object.defineProperty(window, "navigator", origNavigator);
+            Object.defineProperty(window, "navigator", origNavigator!);
         });
 
         const keys = { 'Zenkaku': 0xff2a, 'Hankaku': 0xff2a,
@@ -391,23 +390,23 @@ describe('Key event handling', function () {
                 kbd._handleKeyDown(keyevent('keydown', {code: 'FakeIM', key: key}));
 
                 expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
-                expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([keysym, "FakeIM", true]);
-                expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([keysym, "FakeIM", false]);
+                expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([keysym, "FakeIM", true]);
+                expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([keysym, "FakeIM", false]);
             });
         }
     });
 
     describe('Escape AltGraph on Windows', function () {
-        let origNavigator;
+        let origNavigator: PropertyDescriptor | undefined;
         beforeEach(function () {
             origNavigator = Object.getOwnPropertyDescriptor(window, "navigator");
             Object.defineProperty(window, "navigator", {value: {}});
-            window.navigator.platform = "Windows x86_64";
+            (window.navigator as any).platform = "Windows x86_64";
 
             jest.useFakeTimers();
         });
         afterEach(function () {
-            Object.defineProperty(window, "navigator", origNavigator);
+            Object.defineProperty(window, "navigator", origNavigator!);
             jest.useRealTimers();
         });
 
@@ -424,8 +423,8 @@ describe('Key event handling', function () {
             kbd._handleKeyDown(keyevent('keydown', {code: 'ControlLeft', key: 'Control', location: 1}));
             kbd._handleKeyDown(keyevent('keydown', {code: 'ControlLeft', key: 'Control', location: 1}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
-            expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
-            expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
+            expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
+            expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
         });
 
         test('should not supress ControlRight', function () {
@@ -453,11 +452,11 @@ describe('Key event handling', function () {
             expect(kbd.onkeyevent).not.toHaveBeenCalled();
             kbd._handleKeyDown(keyevent('keydown', {code: 'KeyA', key: 'a'}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
-            expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
-            expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([0x61, "KeyA", true]);
+            expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
+            expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([0x61, "KeyA", true]);
 
             // Check that the timer is properly dead
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
             jest.advanceTimersByTime(100);
             expect(kbd.onkeyevent).not.toHaveBeenCalled();
         });
@@ -468,14 +467,14 @@ describe('Key event handling', function () {
             kbd._handleKeyDown(keyevent('keydown', {code: 'KeyA', key: 'a'}));
             kbd._handleKeyDown(keyevent('keydown', {code: 'ControlLeft', key: 'Control', location: 1}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
-            expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([0x61, "KeyA", true]);
+            expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([0x61, "KeyA", true]);
             kbd._handleKeyUp(keyevent('keyup', {code: 'KeyA', key: 'a'}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(3);
-            expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
-            expect(kbd.onkeyevent.mock.calls[2].slice(0, 3)).toEqual([0x61, "KeyA", false]);
+            expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
+            expect((kbd.onkeyevent as any).mock.calls[2].slice(0, 3)).toEqual([0x61, "KeyA", false]);
 
             // Check that the timer is properly dead
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
             jest.advanceTimersByTime(100);
             expect(kbd.onkeyevent).not.toHaveBeenCalled();
         });
@@ -487,11 +486,11 @@ describe('Key event handling', function () {
             expect(kbd.onkeyevent).not.toHaveBeenCalled();
             kbd._allKeysUp();
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
-            expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
-            expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([0xffe3, "ControlLeft", false]);
+            expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
+            expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([0xffe3, "ControlLeft", false]);
 
             // Check that the timer is properly dead
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
             jest.advanceTimersByTime(100);
             expect(kbd.onkeyevent).not.toHaveBeenCalled();
         });
@@ -506,7 +505,7 @@ describe('Key event handling', function () {
             expectCalledWith(kbd.onkeyevent, 0xfe03, 'AltRight', true);
 
             // Check that the timer is properly dead
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
             jest.advanceTimersByTime(100);
             expect(kbd.onkeyevent).not.toHaveBeenCalled();
         });
@@ -518,11 +517,11 @@ describe('Key event handling', function () {
             jest.advanceTimersByTime(60);
             kbd._handleKeyDown(keyevent('keydown', {code: 'AltRight', key: 'Alt', location: 2, timeStamp: Date.now()}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
-            expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
-            expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([0xffea, "AltRight", true]);
+            expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
+            expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([0xffea, "AltRight", true]);
 
             // Check that the timer is properly dead
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
             jest.advanceTimersByTime(100);
             expect(kbd.onkeyevent).not.toHaveBeenCalled();
         });
@@ -537,7 +536,7 @@ describe('Key event handling', function () {
             expectCalledWith(kbd.onkeyevent, 0xfe03, 'AltRight', true);
 
             // Check that the timer is properly dead
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
             jest.advanceTimersByTime(100);
             expect(kbd.onkeyevent).not.toHaveBeenCalled();
         });
@@ -549,11 +548,11 @@ describe('Key event handling', function () {
             jest.advanceTimersByTime(60);
             kbd._handleKeyDown(keyevent('keydown', {code: 'AltRight', key: 'AltGraph', location: 2, timeStamp: Date.now()}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
-            expect(kbd.onkeyevent.mock.calls[0].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
-            expect(kbd.onkeyevent.mock.calls[1].slice(0, 3)).toEqual([0xfe03, "AltRight", true]);
+            expect((kbd.onkeyevent as any).mock.calls[0].slice(0, 3)).toEqual([0xffe3, "ControlLeft", true]);
+            expect((kbd.onkeyevent as any).mock.calls[1].slice(0, 3)).toEqual([0xfe03, "AltRight", true]);
 
             // Check that the timer is properly dead
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
             jest.advanceTimersByTime(100);
             expect(kbd.onkeyevent).not.toHaveBeenCalled();
         });
@@ -576,16 +575,16 @@ describe('Key event handling', function () {
     });
 
     describe('Missing Shift keyup on Windows', function () {
-        let origNavigator;
+        let origNavigator: PropertyDescriptor | undefined;
         beforeEach(function () {
             origNavigator = Object.getOwnPropertyDescriptor(window, "navigator");
             Object.defineProperty(window, "navigator", {value: {}});
-            window.navigator.platform = "Windows x86_64";
+            (window.navigator as any).platform = "Windows x86_64";
 
             jest.useFakeTimers();
         });
         afterEach(function () {
-            Object.defineProperty(window, "navigator", origNavigator);
+            Object.defineProperty(window, "navigator", origNavigator!);
             jest.useRealTimers();
         });
 
@@ -596,12 +595,12 @@ describe('Key event handling', function () {
             kbd._handleKeyDown(keyevent('keydown', {code: 'ShiftLeft', key: 'Shift', location: 1}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
             expectCalledWith(kbd.onkeyevent, 0xffe1, 'ShiftLeft', true);
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
 
             kbd._handleKeyDown(keyevent('keydown', {code: 'ShiftRight', key: 'Shift', location: 2}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
             expectCalledWith(kbd.onkeyevent, 0xffe2, 'ShiftRight', true);
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
 
             kbd._handleKeyUp(keyevent('keyup', {code: 'ShiftLeft', key: 'Shift', location: 1}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);
@@ -616,12 +615,12 @@ describe('Key event handling', function () {
             kbd._handleKeyDown(keyevent('keydown', {code: 'ShiftLeft', key: 'Shift', location: 1}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
             expectCalledWith(kbd.onkeyevent, 0xffe1, 'ShiftLeft', true);
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
 
             kbd._handleKeyDown(keyevent('keydown', {code: 'ShiftRight', key: 'Shift', location: 2}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(1);
             expectCalledWith(kbd.onkeyevent, 0xffe2, 'ShiftRight', true);
-            kbd.onkeyevent.mockClear();
+            (kbd.onkeyevent as any).mockClear();
 
             kbd._handleKeyUp(keyevent('keyup', {code: 'ShiftRight', key: 'Shift', location: 2}));
             expect(kbd.onkeyevent).toHaveBeenCalledTimes(2);

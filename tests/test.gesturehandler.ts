@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, jest } from "bun:test";
 
 import EventTargetMixin from '../core/util/eventtarget.ts';
@@ -9,9 +8,9 @@ class DummyTarget extends EventTargetMixin {
 }
 
 describe('Gesture handler', function () {
-    let target, handler;
-    let gestures;
-    let touches;
+    let target: any, handler: any;
+    let gestures: any;
+    let touches: any[];
 
     beforeAll(function () {
         jest.useFakeTimers();
@@ -40,7 +39,7 @@ describe('Gesture handler', function () {
         gestures = null;
     });
 
-    function touchStart(id, x, y) {
+    function touchStart(id: number, x: number, y: number) {
         let touch = { identifier: id,
                       clientX: x, clientY: y };
         touches.push(touch);
@@ -53,8 +52,8 @@ describe('Gesture handler', function () {
         target.dispatchEvent(ev);
     }
 
-    function touchMove(id, x, y) {
-        let touch = touches.find(t => t.identifier === id);
+    function touchMove(id: number, x: number, y: number) {
+        let touch = touches.find((t: any) => t.identifier === id);
         touch.clientX = x;
         touch.clientY = y;
         let ev = { type: 'touchmove',
@@ -66,8 +65,8 @@ describe('Gesture handler', function () {
         target.dispatchEvent(ev);
     }
 
-    function touchEnd(id) {
-        let idx = touches.findIndex(t => t.identifier === id);
+    function touchEnd(id: number) {
+        let idx = touches.findIndex((t: any) => t.identifier === id);
         let touch = touches.splice(idx, 1)[0];
         let ev = { type: 'touchend',
                    touches: touches,
@@ -81,7 +80,7 @@ describe('Gesture handler', function () {
     // Helper to check gesture calls with partial matching
     // CustomEvent stores type/detail via Symbols in happy-dom,
     // but exposes them via getters, so we compare explicitly
-    function expectGestureCalledWith(callIndex, expected) {
+    function expectGestureCalledWith(callIndex: number, expected: any) {
         const call = gestures.mock.calls[callIndex][0];
         expect(call.type).toBe(expected.type);
         if (expected.detail) {

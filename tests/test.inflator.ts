@@ -1,11 +1,10 @@
-// @ts-nocheck
 import { describe, expect, test } from "bun:test";
 import "./test-helpers.ts";
 import { deflateInit, deflate, Z_FULL_FLUSH } from "../vendor/pako/lib/zlib/deflate.js";
 import ZStream from "../vendor/pako/lib/zlib/zstream.js";
 import Inflator from "../core/inflator.ts";
 
-function _deflator(data) {
+function _deflator(data: Uint8Array) {
     let strm = new ZStream();
 
     deflateInit(strm, 5);

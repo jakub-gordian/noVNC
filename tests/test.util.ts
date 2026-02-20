@@ -1,4 +1,3 @@
-// @ts-nocheck
 /* eslint-disable no-console */
 import { describe, expect, test, beforeEach, afterEach, spyOn } from "bun:test";
 
@@ -7,7 +6,11 @@ import { encodeUTF8, decodeUTF8 } from '../core/util/strings.ts';
 
 describe('Utils', function () {
     describe('logging functions', function () {
-        let logSpy, debugSpy, warnSpy, errorSpy, infoSpy;
+        let logSpy: ReturnType<typeof spyOn>;
+        let debugSpy: ReturnType<typeof spyOn>;
+        let warnSpy: ReturnType<typeof spyOn>;
+        let errorSpy: ReturnType<typeof spyOn>;
+        let infoSpy: ReturnType<typeof spyOn>;
 
         beforeEach(function () {
             logSpy = spyOn(console, 'log');

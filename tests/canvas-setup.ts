@@ -1,4 +1,3 @@
-// @ts-nocheck
 // tests/canvas-setup.ts
 // Canvas polyfill for bun:test environment.
 // Uses @napi-rs/canvas to provide real Canvas 2D context support
@@ -8,12 +7,12 @@ import { createCanvas, ImageData as NativeImageData } from "@napi-rs/canvas";
 
 // Make ImageData available globally if happy-dom doesn't provide it
 if (typeof globalThis.ImageData === "undefined") {
-    globalThis.ImageData = NativeImageData;
+    (globalThis as any).ImageData = NativeImageData;
 }
 
 // Helper: given something that might be a DOM canvas with a _nativeCanvas,
 // extract the native canvas for use with @napi-rs/canvas drawImage.
-function resolveNativeCanvas(source) {
+function resolveNativeCanvas(source: any): any {
     if (source && source._nativeCanvas) {
         return source._nativeCanvas;
     }
@@ -22,9 +21,9 @@ function resolveNativeCanvas(source) {
 
 // Wrap a native 2D context so that drawImage resolves DOM canvases
 // to their native backing canvases
-function wrapContext(ctx) {
+function wrapContext(ctx: any): any {
     const origDrawImage = ctx.drawImage.bind(ctx);
-    ctx.drawImage = function (image, ...args) {
+    ctx.drawImage = function (image: any, ...args: any[]) {
         return origDrawImage(resolveNativeCanvas(image), ...args);
     };
     return ctx;
@@ -35,29 +34,29 @@ function wrapContext(ctx) {
 // This allows the canvas to be used as a regular DOM node (appendChild, etc.)
 // while still providing real 2D drawing capabilities.
 const origCreateElement = document.createElement.bind(document);
-document.createElement = function (tagName, options) {
+(document as any).createElement = function (tagName: string, options?: ElementCreationOptions) {
     if (tagName.toLowerCase() === "canvas") {
         // Create a real happy-dom canvas element (can be used in DOM)
-        const domCanvas = origCreateElement("canvas", options);
+        const domCanvas: any = origCreateElement("canvas", options);
 
         // Create a single backing native canvas for actual 2D rendering.
         // We resize it in place rather than recreating, so contexts stay valid.
         const nativeCanvas = createCanvas(0, 0);
-        let wrappedCtx = null;
+        let wrappedCtx: any = null;
 
         // Sync size: when the DOM canvas width/height is set,
         // also update the native canvas in place
-        const widthDesc = Object.getOwnPropertyDescriptor(
+        const widthDesc: any = Object.getOwnPropertyDescriptor(
             Object.getPrototypeOf(domCanvas), "width"
-        ) || { get() { return this._width || 0; }, set(v) { this._width = v; } };
+        ) || { get() { return this._width || 0; }, set(v: number) { this._width = v; } };
 
-        const heightDesc = Object.getOwnPropertyDescriptor(
+        const heightDesc: any = Object.getOwnPropertyDescriptor(
             Object.getPrototypeOf(domCanvas), "height"
-        ) || { get() { return this._height || 0; }, set(v) { this._height = v; } };
+        ) || { get() { return this._height || 0; }, set(v: number) { this._height = v; } };
 
         Object.defineProperty(domCanvas, "width", {
             get() { return widthDesc.get ? widthDesc.get.call(this) : (this._width || 0); },
-            set(v) {
+            set(v: number) {
                 if (widthDesc.set) widthDesc.set.call(this, v);
                 else this._width = v;
                 nativeCanvas.width = v;
@@ -68,7 +67,7 @@ document.createElement = function (tagName, options) {
 
         Object.defineProperty(domCanvas, "height", {
             get() { return heightDesc.get ? heightDesc.get.call(this) : (this._height || 0); },
-            set(v) {
+            set(v: number) {
                 if (heightDesc.set) heightDesc.set.call(this, v);
                 else this._height = v;
                 nativeCanvas.height = v;
@@ -78,7 +77,7 @@ document.createElement = function (tagName, options) {
         });
 
         // Override getContext to return the native canvas's context (wrapped)
-        domCanvas.getContext = function (contextType, contextAttributes) {
+        domCanvas.getContext = function (contextType: string, contextAttributes?: any) {
             if (contextType === "2d") {
                 if (!wrappedCtx) {
                     wrappedCtx = wrapContext(nativeCanvas.getContext("2d", contextAttributes));
@@ -89,18 +88,18 @@ document.createElement = function (tagName, options) {
         };
 
         // Proxy toDataURL and toBlob to the native canvas
-        domCanvas.toDataURL = function (...args) {
-            return nativeCanvas.toDataURL(...args);
+        domCanvas.toDataURL = function (type?: string, quality?: number) {
+            return nativeCanvas.toDataURL(type as any, quality);
         };
 
-        domCanvas.toBlob = function (...args) {
-            return nativeCanvas.toBlob(...args);
+        domCanvas.toBlob = function (callback: any, type?: string, quality?: number) {
+            return nativeCanvas.toBlob(callback, type as any, quality);
         };
 
         // Override getBoundingClientRect to return dimensions based on the
         // canvas width/height, since happy-dom doesn't do layout.
         // This is critical for mouse event coordinate calculations.
-        domCanvas.getBoundingClientRect = function () {
+        domCanvas.getBoundingClientRect = function (): DOMRect {
             return {
                 left: 0,
                 top: 0,
@@ -110,7 +109,8 @@ document.createElement = function (tagName, options) {
                 height: nativeCanvas.height,
                 x: 0,
                 y: 0,
-            };
+                toJSON() { return this; },
+            } as DOMRect;
         };
 
         // Store reference to native canvas for direct access if needed
