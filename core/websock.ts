@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Websock: high-performance buffering wrapper
  * Copyright (C) 2019 The noVNC authors
@@ -18,7 +17,7 @@ import * as Log from './util/logging.ts';
 // this has performance issues in some versions Chromium, and
 // doesn't gain a tremendous amount of performance increase in Firefox
 // at the moment.  It may be valuable to turn it on in the future.
-const MAX_RQ_GROW_SIZE = 40 * 1024 * 1024;  // 40 MiB
+const MAX_RQ_GROW_SIZE: number = 40 * 1024 * 1024;  // 40 MiB
 
 // Constants pulled from RTCDataChannelState enum
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCDataChannel/readyState#RTCDataChannelState_enum
@@ -27,9 +26,9 @@ const DataChannel = {
     OPEN: "open",
     CLOSING: "closing",
     CLOSED: "closed"
-};
+} as const;
 
-const ReadyStates = {
+const ReadyStates: Record<string, (number | string)[]> = {
     CONNECTING: [WebSocket.CONNECTING, DataChannel.CONNECTING],
     OPEN: [WebSocket.OPEN, DataChannel.OPEN],
     CLOSING: [WebSocket.CLOSING, DataChannel.CLOSING],
@@ -37,7 +36,7 @@ const ReadyStates = {
 };
 
 // Properties a raw channel must have, WebSocket and RTCDataChannel are two examples
-const rawChannelProps = [
+const rawChannelProps: string[] = [
     "send",
     "close",
     "binaryType",
@@ -48,7 +47,45 @@ const rawChannelProps = [
     "readyState",
 ];
 
+type WebsockReadyState = "unused" | "connecting" | "open" | "closing" | "closed" | "unknown";
+
+type EventHandlerKey = "message" | "open" | "close" | "error";
+
+interface WebsockEventMap {
+    message: () => void;
+    open: () => void;
+    close: (e: CloseEvent) => void;
+    error: (e: Event) => void;
+}
+
+// A raw channel interface that is loose enough to accept both real
+// WebSocket/RTCDataChannel and test fakes.
+interface RawChannelLike {
+    send(data: unknown): void;
+    close(code?: number, reason?: string): void;
+    binaryType: string;
+    onerror: ((ev: unknown) => unknown) | null;
+    onmessage: ((ev: unknown) => unknown) | null;
+    onopen: ((ev: unknown) => unknown) | null;
+    onclose?: ((ev: unknown) => unknown) | null;
+    protocol: string;
+    readyState: number | string;
+}
+
 export default class Websock {
+    _websocket: RawChannelLike | null;
+
+    _rQi: number;
+    _rQlen: number;
+    _rQbufferSize: number;
+    _rQ: Uint8Array | null;
+
+    _sQbufferSize: number;
+    _sQlen: number;
+    _sQ: Uint8Array | null;
+
+    _eventHandlers: WebsockEventMap;
+
     constructor() {
         this._websocket = null;  // WebSocket or RTCDataChannel object
 
@@ -73,8 +110,8 @@ export default class Websock {
 
     // Getters and setters
 
-    get readyState() {
-        let subState;
+    get readyState(): WebsockReadyState {
+        let subState: number | string;
 
         if (this._websocket === null) {
             return "unused";
@@ -96,72 +133,72 @@ export default class Websock {
     }
 
     // Receive queue
-    rQpeek8() {
-        return this._rQ[this._rQi];
+    rQpeek8(): number {
+        return this._rQ![this._rQi];
     }
 
-    rQskipBytes(bytes) {
+    rQskipBytes(bytes: number): void {
         this._rQi += bytes;
     }
 
-    rQshift8() {
+    rQshift8(): number {
         return this._rQshift(1);
     }
 
-    rQshift16() {
+    rQshift16(): number {
         return this._rQshift(2);
     }
 
-    rQshift32() {
+    rQshift32(): number {
         return this._rQshift(4);
     }
 
     // TODO(directxman12): test performance with these vs a DataView
-    _rQshift(bytes) {
+    _rQshift(bytes: number): number {
         let res = 0;
         for (let byte = bytes - 1; byte >= 0; byte--) {
-            res += this._rQ[this._rQi++] << (byte * 8);
+            res += this._rQ![this._rQi++] << (byte * 8);
         }
         return res >>> 0;
     }
 
-    rQshiftStr(len) {
+    rQshiftStr(len: number): string {
         let str = "";
         // Handle large arrays in steps to avoid long strings on the stack
         for (let i = 0; i < len; i += 4096) {
             let part = this.rQshiftBytes(Math.min(4096, len - i), false);
-            str += String.fromCharCode.apply(null, part);
+            str += String.fromCharCode.apply(null, part as unknown as number[]);
         }
         return str;
     }
 
-    rQshiftBytes(len, copy=true) {
+    rQshiftBytes(len: number, copy: boolean = true): Uint8Array {
         this._rQi += len;
         if (copy) {
-            return this._rQ.slice(this._rQi - len, this._rQi);
+            return this._rQ!.slice(this._rQi - len, this._rQi);
         } else {
-            return this._rQ.subarray(this._rQi - len, this._rQi);
+            return this._rQ!.subarray(this._rQi - len, this._rQi);
         }
     }
 
-    rQshiftTo(target, len) {
+    rQshiftTo(target: Uint8Array, len: number): void {
         // TODO: make this just use set with views when using a ArrayBuffer to store the rQ
-        target.set(new Uint8Array(this._rQ.buffer, this._rQi, len));
+        target.set(new Uint8Array(this._rQ!.buffer, this._rQi, len));
         this._rQi += len;
     }
 
-    rQpeekBytes(len, copy=true) {
+    rQpeekBytes(len: number, copy: boolean = true): Uint8Array {
         if (copy) {
-            return this._rQ.slice(this._rQi, this._rQi + len);
+            return this._rQ!.slice(this._rQi, this._rQi + len);
         } else {
-            return this._rQ.subarray(this._rQi, this._rQi + len);
+            return this._rQ!.subarray(this._rQi, this._rQi + len);
         }
     }
 
     // Check to see if we must wait for 'num' bytes (default to FBU.bytes)
     // to be available in the receive queue. Return true if we need to
     // wait (and possibly print a debug message), otherwise false.
-    rQwait(msg, num, goback) {
+    rQwait(msg: string, num: number, goback?: number): boolean {
         if (this._rQlen - this._rQi < num) {
             if (goback) {
                 if (this._rQi < goback) {
@@ -176,31 +213,31 @@ export default class Websock {
 
     // Send queue
 
-    sQpush8(num) {
+    sQpush8(num: number): void {
         this._sQensureSpace(1);
-        this._sQ[this._sQlen++] = num;
+        this._sQ![this._sQlen++] = num;
     }
 
-    sQpush16(num) {
+    sQpush16(num: number): void {
         this._sQensureSpace(2);
-        this._sQ[this._sQlen++] = (num >> 8) & 0xff;
-        this._sQ[this._sQlen++] = (num >> 0) & 0xff;
+        this._sQ![this._sQlen++] = (num >> 8) & 0xff;
+        this._sQ![this._sQlen++] = (num >> 0) & 0xff;
     }
 
-    sQpush32(num) {
+    sQpush32(num: number): void {
         this._sQensureSpace(4);
-        this._sQ[this._sQlen++] = (num >> 24) & 0xff;
-        this._sQ[this._sQlen++] = (num >> 16) & 0xff;
-        this._sQ[this._sQlen++] = (num >>  8) & 0xff;
-        this._sQ[this._sQlen++] = (num >>  0) & 0xff;
+        this._sQ![this._sQlen++] = (num >> 24) & 0xff;
+        this._sQ![this._sQlen++] = (num >> 16) & 0xff;
+        this._sQ![this._sQlen++] = (num >>  8) & 0xff;
+        this._sQ![this._sQlen++] = (num >>  0) & 0xff;
     }
 
-    sQpushString(str) {
+    sQpushString(str: string): void {
         let bytes = str.split('').map(chr => chr.charCodeAt(0));
         this.sQpushBytes(new Uint8Array(bytes));
     }
 
-    sQpushBytes(bytes) {
+    sQpushBytes(bytes: Uint8Array): void {
         for (let offset = 0;offset < bytes.length;) {
             this._sQensureSpace(1);
 
@@ -209,50 +246,54 @@ export default class Websock {
                 chunkSize = bytes.length - offset;
             }
 
-            this._sQ.set(bytes.subarray(offset, offset + chunkSize), this._sQlen);
+            this._sQ!.set(bytes.subarray(offset, offset + chunkSize), this._sQlen);
             this._sQlen += chunkSize;
             offset += chunkSize;
         }
     }
 
-    flush() {
+    flush(): void {
         if (this._sQlen > 0 && this.readyState === 'open') {
-            this._websocket.send(new Uint8Array(this._sQ.buffer, 0, this._sQlen));
+            this._websocket!.send(new Uint8Array(this._sQ!.buffer, 0, this._sQlen));
             this._sQlen = 0;
         }
     }
 
-    _sQensureSpace(bytes) {
+    _sQensureSpace(bytes: number): void {
         if (this._sQbufferSize - this._sQlen < bytes) {
             this.flush();
         }
     }
 
     // Event handlers
-    off(evt) {
-        this._eventHandlers[evt] = () => {};
+    off<K extends EventHandlerKey>(evt: K): void {
+        // The no-op handler is safe for all event types since extra
+        // arguments are simply ignored at runtime.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this._eventHandlers as any)[evt] = () => {};
     }
 
-    on(evt, handler) {
-        this._eventHandlers[evt] = handler;
+    on<K extends EventHandlerKey>(evt: K, handler: WebsockEventMap[K]): void {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this._eventHandlers as any)[evt] = handler;
     }
 
-    _allocateBuffers() {
+    _allocateBuffers(): void {
         this._rQ = new Uint8Array(this._rQbufferSize);
         this._sQ = new Uint8Array(this._sQbufferSize);
     }
 
-    init() {
+    init(): void {
         this._allocateBuffers();
         this._rQi = 0;
         this._websocket = null;
     }
 
-    open(uri, protocols) {
-        this.attach(new WebSocket(uri, protocols));
+    open(uri: string, protocols?: string | string[]): void {
+        this.attach(new WebSocket(uri, protocols) as unknown as RawChannelLike);
     }
 
-    attach(rawChannel) {
+    attach(rawChannel: RawChannelLike): void {
         this.init();
 
         // Must get object and class methods to be compatible with the tests.
@@ -266,32 +307,32 @@ export default class Websock {
 
         this._websocket = rawChannel;
         this._websocket.binaryType = "arraybuffer";
-        this._websocket.onmessage = this._recvMessage.bind(this);
+        this._websocket.onmessage = this._recvMessage.bind(this) as (ev: unknown) => void;
 
         this._websocket.onopen = () => {
             Log.Debug('>> WebSock.onopen');
-            if (this._websocket.protocol) {
-                Log.Info("Server choose sub-protocol: " + this._websocket.protocol);
+            if (this._websocket!.protocol) {
+                Log.Info("Server choose sub-protocol: " + this._websocket!.protocol);
             }
 
             this._eventHandlers.open();
             Log.Debug("<< WebSock.onopen");
         };
 
-        this._websocket.onclose = (e) => {
+        this._websocket.onclose = ((e: CloseEvent) => {
             Log.Debug(">> WebSock.onclose");
             this._eventHandlers.close(e);
             Log.Debug("<< WebSock.onclose");
-        };
+        }) as (ev: unknown) => void;
 
-        this._websocket.onerror = (e) => {
+        this._websocket.onerror = ((e: Event) => {
             Log.Debug(">> WebSock.onerror: " + e);
             this._eventHandlers.error(e);
             Log.Debug("<< WebSock.onerror: " + e);
-        };
+        }) as (ev: unknown) => void;
     }
 
-    close() {
+    close(): void {
         if (this._websocket) {
             if (this.readyState === 'connecting' ||
                 this.readyState === 'open') {
@@ -310,7 +351,7 @@ export default class Websock {
     // The function also expands the receive que if needed, and for
     // performance reasons we combine these two actions to avoid
     // unnecessary copying.
-    _expandCompactRQ(minFit) {
+    _expandCompactRQ(minFit: number): void {
         // if we're using less than 1/8th of the buffer even with the incoming bytes, compact in place
         // instead of resizing
         const requiredBufferSize =  (this._rQlen - this._rQi + minFit) * 8;
@@ -331,11 +372,11 @@ export default class Websock {
         }
 
         if (resizeNeeded) {
-            const oldRQbuffer = this._rQ.buffer;
+            const oldRQbuffer = this._rQ!.buffer;
             this._rQ = new Uint8Array(this._rQbufferSize);
             this._rQ.set(new Uint8Array(oldRQbuffer, this._rQi, this._rQlen - this._rQi));
         } else {
-            this._rQ.copyWithin(0, this._rQi, this._rQlen);
+            this._rQ!.copyWithin(0, this._rQi, this._rQlen);
         }
 
         this._rQlen = this._rQlen - this._rQi;
@@ -343,18 +384,18 @@ export default class Websock {
     }
 
     // push arraybuffer values onto the end of the receive que
-    _recvMessage(e) {
+    _recvMessage(e: MessageEvent): void {
         if (this._rQlen == this._rQi) {
             // All data has now been processed, this means we
             // can reset the receive queue.
             this._rQlen = 0;
             this._rQi = 0;
         }
-        const u8 = new Uint8Array(e.data);
+        const u8 = new Uint8Array(e.data as ArrayBuffer);
         if (u8.length > this._rQbufferSize - this._rQlen) {
             this._expandCompactRQ(u8.length);
         }
-        this._rQ.set(u8, this._rQlen);
+        this._rQ!.set(u8, this._rQlen);
         this._rQlen += u8.length;
 
         if (this._rQlen - this._rQi > 0) {

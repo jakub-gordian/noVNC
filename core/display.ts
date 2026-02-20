@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -10,13 +9,95 @@
 import * as Log from './util/logging.ts';
 import Base64 from "./base64.ts";
 import { toSigned32bit } from './util/int.ts';
+import type { Rect, DamageBounds, PendingFrame } from './types.ts';
+
+interface FlipAction {
+    type: 'flip';
+}
+
+interface CopyAction {
+    type: 'copy';
+    oldX: number;
+    oldY: number;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+interface FillAction {
+    type: 'fill';
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    color: Uint8Array | number[];
+}
+
+interface BlitAction {
+    type: 'blit';
+    data: Uint8Array;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+interface ImgAction {
+    type: 'img';
+    img: HTMLImageElement & { _noVNCDisplay?: Display };
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+interface FrameAction {
+    type: 'frame';
+    frame: PendingFrame;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+type RenderQAction = FlipAction | CopyAction | FillAction | BlitAction | ImgAction | FrameAction;
+
+// Vendor-prefixed CanvasRenderingContext2D extensions
+interface VendorCanvasRenderingContext2D extends CanvasRenderingContext2D {
+    mozImageSmoothingEnabled?: boolean;
+    webkitImageSmoothingEnabled?: boolean;
+    msImageSmoothingEnabled?: boolean;
+}
+
+// CanvasImageSource that also has width/height properties for damage tracking
+type DrawableSource = CanvasImageSource & { width: number; height: number };
 
 export default class Display {
-    constructor(target) {
-        this._drawCtx = null;
+    _target: HTMLCanvasElement;
+    _targetCtx: CanvasRenderingContext2D;
+    _backbuffer: HTMLCanvasElement;
+    _drawCtx: VendorCanvasRenderingContext2D;
 
+    _renderQ: RenderQAction[];
+    _flushPromise: Promise<void> | null;
+    _flushResolve: (() => void) | null;
+
+    _fbWidth: number;
+    _fbHeight: number;
+
+    _viewportLoc: Rect;
+    _damageBounds: DamageBounds;
+
+    _prevDrawStyle: string;
+    _scale: number;
+    _clipViewport: boolean;
+    _isVirtualizationServer: boolean;
+
+    constructor(target: HTMLCanvasElement) {
         this._renderQ = [];  // queue drawing actions for in-oder rendering
         this._flushPromise = null;
+        this._flushResolve = null;
 
         // the full frame buffer (logical canvas) size
         this._fbWidth = 0;
@@ -44,14 +125,14 @@ export default class Display {
             throw new Error("no getContext method");
         }
 
-        this._targetCtx = this._target.getContext('2d');
+        this._targetCtx = this._target.getContext('2d')!;
 
         // the visible canvas viewport (i.e. what actually gets seen)
         this._viewportLoc = { 'x': 0, 'y': 0, 'w': this._target.width, 'h': this._target.height };
 
         // The hidden canvas, where we do the actual rendering
         this._backbuffer = document.createElement('canvas');
-        this._drawCtx = this._backbuffer.getContext('2d');
+        this._drawCtx = this._backbuffer.getContext('2d')! as VendorCanvasRenderingContext2D;
 
         this._damageBounds = { left: 0, top: 0,
                                right: this._backbuffer.width,
@@ -68,7 +149,7 @@ export default class Display {
     }
 
     // Method to set server type
-    setVirtualizationServer(isVirtualization) {
+    setVirtualizationServer(isVirtualization: boolean): void {
         if (isVirtualization) {
             Log.Info("Display: Setting display mode for Virtualization server (applying BGR swap)");
         }
@@ -77,13 +158,13 @@ export default class Display {
 
     // ===== PROPERTIES =====
 
-    get scale() { return this._scale; }
-    set scale(scale) {
+    get scale(): number { return this._scale; }
+    set scale(scale: number) {
         this._rescale(scale);
     }
 
-    get clipViewport() { return this._clipViewport; }
-    set clipViewport(viewport) {
+    get clipViewport(): boolean { return this._clipViewport; }
+    set clipViewport(viewport: boolean) {
         this._clipViewport = viewport;
         // May need to readjust the viewport dimensions
         const vp = this._viewportLoc;
@@ -91,17 +172,17 @@ export default class Display {
         this.viewportChangePos(0, 0);
     }
 
-    get width() {
+    get width(): number {
         return this._fbWidth;
     }
 
-    get height() {
+    get height(): number {
         return this._fbHeight;
     }
 
     // ===== PUBLIC METHODS =====
 
-    viewportChangePos(deltaX, deltaY) {
+    viewportChangePos(deltaX: number, deltaY: number): void {
         const vp = this._viewportLoc;
         deltaX = Math.floor(deltaX);
         deltaY = Math.floor(deltaY);
@@ -143,7 +224,7 @@ export default class Display {
         this.flip();
     }
 
-    viewportChangeSize(width, height) {
+    viewportChangeSize(width?: number, height?: number): void {
 
         if (!this._clipViewport ||
             typeof(width) === "undefined" ||
@@ -184,21 +265,21 @@ export default class Display {
         }
     }
 
-    absX(x) {
+    absX(x: number): number {
         if (this._scale === 0) {
             return 0;
         }
         return toSigned32bit(x / this._scale + this._viewportLoc.x);
     }
 
-    absY(y) {
+    absY(y: number): number {
         if (this._scale === 0) {
             return 0;
         }
         return toSigned32bit(y / this._scale + this._viewportLoc.y);
     }
 
-    resize(width, height) {
+    resize(width: number, height: number): void {
         this._prevDrawStyle = "";
 
         this._fbWidth = width;
@@ -208,7 +289,7 @@ export default class Display {
         if (canvas.width !== width || canvas.height !== height) {
 
             // We have to save the canvas data since changing the size will clear it
-            let saveImg = null;
+            let saveImg: ImageData | null = null;
             if (canvas.width > 0 && canvas.height > 0) {
                 saveImg = this._drawCtx.getImageData(0, 0, canvas.width, canvas.height);
             }
@@ -232,20 +313,20 @@ export default class Display {
         this.viewportChangePos(0, 0);
     }
 
-    getImageData() {
+    getImageData(): ImageData {
         return this._drawCtx.getImageData(0, 0, this.width, this.height);
     }
 
-    toDataURL(type, encoderOptions) {
+    toDataURL(type?: string, encoderOptions?: number): string {
         return this._backbuffer.toDataURL(type, encoderOptions);
     }
 
-    toBlob(callback, type, quality) {
+    toBlob(callback: BlobCallback, type?: string, quality?: number): void {
         return this._backbuffer.toBlob(callback, type, quality);
     }
 
     // Track what parts of the visible canvas that need updating
-    _damage(x, y, w, h) {
+    _damage(x: number, y: number, w: number, h: number): void {
         if (x < this._damageBounds.left) {
             this._damageBounds.left = x;
         }
@@ -262,7 +343,7 @@ export default class Display {
 
     // Update the visible canvas with the contents of the
     // rendering canvas
-    flip(fromQueue) {
+    flip(fromQueue?: boolean): void {
         if (this._renderQ.length !== 0 && !fromQueue) {
             this._renderQPush({
                 'type': 'flip'
@@ -308,16 +389,16 @@ export default class Display {
         }
     }
 
-    pending() {
+    pending(): boolean {
         return this._renderQ.length > 0;
     }
 
-    flush() {
+    flush(): Promise<void> {
         if (this._renderQ.length === 0) {
             return Promise.resolve();
         } else {
             if (this._flushPromise === null) {
-                this._flushPromise = new Promise((resolve) => {
+                this._flushPromise = new Promise<void>((resolve) => {
                     this._flushResolve = resolve;
                 });
             }
@@ -325,7 +406,7 @@ export default class Display {
         }
     }
 
-    fillRect(x, y, width, height, color, fromQueue) {
+    fillRect(x: number, y: number, width: number, height: number, color: Uint8Array | number[], fromQueue?: boolean): void {
         if (this._renderQ.length !== 0 && !fromQueue) {
             this._renderQPush({
                 'type': 'fill',
@@ -346,7 +427,7 @@ export default class Display {
         }
     }
 
-    copyImage(oldX, oldY, newX, newY, w, h, fromQueue) {
+    copyImage(oldX: number, oldY: number, newX: number, newY: number, w: number, h: number, fromQueue?: boolean): void {
         if (this._renderQ.length !== 0 && !fromQueue) {
             this._renderQPush({
                 'type': 'copy',
@@ -377,13 +458,13 @@ export default class Display {
         }
     }
 
-    imageRect(x, y, width, height, mime, arr) {
+    imageRect(x: number, y: number, width: number, height: number, mime: string, arr: Uint8Array): void {
         /* The internal logic cannot handle empty images, so bail early */
         if ((width === 0) || (height === 0)) {
             return;
         }
 
-        const img = new Image();
+        const img = new Image() as HTMLImageElement & { _noVNCDisplay?: Display };
         img.src = "data: " + mime + ";base64," + Base64.encode(arr);
 
         this._renderQPush({
@@ -396,7 +477,7 @@ export default class Display {
         });
     }
 
-    videoFrame(x, y, width, height, frame) {
+    videoFrame(x: number, y: number, width: number, height: number, frame: PendingFrame): void {
         this._renderQPush({
             'type': 'frame',
             'frame': frame,
@@ -407,7 +488,7 @@ export default class Display {
         });
     }
 
-    blitImage(x, y, width, height, arr, offset, fromQueue) {
+    blitImage(x: number, y: number, width: number, height: number, arr: Uint8Array, offset: number, fromQueue?: boolean): void {
         if (this._renderQ.length !== 0 && !fromQueue) {
             // NB(directxman12): it's technically more performant here to use preallocated arrays,
             // but it's a lot of extra work for not a lot of payoff -- if we're using the render queue,
@@ -431,53 +512,54 @@ export default class Display {
                     let beforeSample = "";
                     for (let i = 0; i < Math.min(4, width); i++) {
                         let idx = i * 4;
-                        beforeSample += "[" + arr[idx + offset] + "," + arr[idx + offset + 1] + "," + 
+                        beforeSample += "[" + arr[idx + offset] + "," + arr[idx + offset + 1] + "," +
                                   arr[idx + offset + 2] + "] ";
                     }
                     Log.Info("Before swap sample: " + beforeSample);
                 }
-                
+
                 // Create a copy of arr so we don't modify the original
                 const tempArr = new Uint8Array(width * height * 4);
                 for (let i = 0; i < width * height; i++) {
                     const idx = i * 4 + offset;
                     // Copy with R and B swapped
-                    tempArr[i * 4] = arr[idx + 2];     // R ← B
+                    tempArr[i * 4] = arr[idx + 2];     // R <- B
                     tempArr[i * 4 + 1] = arr[idx + 1]; // G unchanged
-                    tempArr[i * 4 + 2] = arr[idx];     // B ← R
+                    tempArr[i * 4 + 2] = arr[idx];     // B <- R
                     tempArr[i * 4 + 3] = arr[idx + 3]; // A unchanged
                 }
-                
+
                 // Log sample after swap for first line
                 if (y === 0 && x === 0) {
                     let afterSample = "";
                     for (let i = 0; i < Math.min(4, width); i++) {
                         let idx = i * 4;
-                        afterSample += "[" + tempArr[idx] + "," + tempArr[idx + 1] + "," + 
+                        afterSample += "[" + tempArr[idx] + "," + tempArr[idx + 1] + "," +
                                   tempArr[idx + 2] + "] ";
                     }
                     Log.Info("After swap sample: " + afterSample);
                 }
-                
+
                 // Use the swapped data
                 const data = new Uint8ClampedArray(tempArr.buffer, 0, width * height * 4);
                 const img = new ImageData(data, width, height);
                 this._drawCtx.putImageData(img, x, y);
             } else {
                 // Standard handling for other servers
-                const data = new Uint8ClampedArray(arr.buffer,
+                const data = new Uint8ClampedArray(arr.buffer as ArrayBuffer,
                                                 arr.byteOffset + offset,
                                                 width * height * 4);
                 const img = new ImageData(data, width, height);
                 this._drawCtx.putImageData(img, x, y);
             }
-            
+
             this._damage(x, y, width, height);
         }
     }
 
-    drawImage(img, ...args) {
-        this._drawCtx.drawImage(img, ...args);
+    drawImage(img: DrawableSource, ...args: number[]): void {
+        // Cast needed because rest args don't match the overloaded drawImage signature
+        (this._drawCtx as CanvasRenderingContext2D).drawImage(img, ...args as [number, number]);
 
         if (args.length <= 4) {
             const [x, y] = args;
@@ -488,8 +570,8 @@ export default class Display {
         }
     }
 
-    autoscale(containerWidth, containerHeight) {
-        let scaleRatio;
+    autoscale(containerWidth: number, containerHeight: number): void {
+        let scaleRatio: number;
 
         if (containerWidth === 0 || containerHeight === 0) {
             scaleRatio = 0;
@@ -512,7 +594,7 @@ export default class Display {
 
     // ===== PRIVATE METHODS =====
 
-    _rescale(factor) {
+    _rescale(factor: number): void {
         this._scale = factor;
         const vp = this._viewportLoc;
 
@@ -530,7 +612,7 @@ export default class Display {
         }
     }
 
-    _setFillColor(color) {
+    _setFillColor(color: Uint8Array | number[]): void {
         const newStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')';
         if (newStyle !== this._prevDrawStyle) {
             this._drawCtx.fillStyle = newStyle;
@@ -538,7 +620,7 @@ export default class Display {
         }
     }
 
-    _renderQPush(action) {
+    _renderQPush(action: RenderQAction): void {
         this._renderQ.push(action);
         if (this._renderQ.length === 1) {
             // If this can be rendered immediately it will be, otherwise
@@ -547,14 +629,14 @@ export default class Display {
         }
     }
 
-    _resumeRenderQ() {
+    _resumeRenderQ(this: HTMLImageElement & { _noVNCDisplay: Display }): void {
         // "this" is the object that is ready, not the
         // display object
         this.removeEventListener('load', this._noVNCDisplay._resumeRenderQ);
         this._noVNCDisplay._scanRenderQ();
     }
 
-    _scanRenderQ() {
+    _scanRenderQ(): void {
         let ready = true;
         while (ready && this._renderQ.length > 0) {
             const a = this._renderQ[0];
@@ -594,10 +676,10 @@ export default class Display {
                         // limitations of the encoder, so we need to crop the
                         // frame.
                         let frame = a.frame.frame;
-                        if (frame.codedWidth < a.width || frame.codedHeight < a.height) {
+                        if (frame!.codedWidth < a.width || frame!.codedHeight < a.height) {
                             Log.Warn("Decoded video frame does not cover its full rectangle area. Expecting at least " +
                                       a.width + "x" + a.height + " but got " +
-                                      frame.codedWidth + "x" + frame.codedHeight);
+                                      frame!.codedWidth + "x" + frame!.codedHeight);
                         }
                         const sx = 0;
                         const sy = 0;
@@ -607,11 +689,11 @@ export default class Display {
                         const dy = a.y;
                         const dw = sw;
                         const dh = sh;
-                        this.drawImage(frame, sx, sy, sw, sh, dx, dy, dw, dh);
-                        frame.close();
+                        this.drawImage(frame as unknown as DrawableSource, sx, sy, sw, sh, dx, dy, dw, dh);
+                        frame!.close();
                     } else {
-                        let display = this;
-                        a.frame.promise.then(() => {
+                        const display = this;
+                        a.frame.promise!.then(() => {
                             display._scanRenderQ();
                         });
                         ready = false;
@@ -626,7 +708,7 @@ export default class Display {
 
         if (this._renderQ.length === 0 &&
             this._flushPromise !== null) {
-            this._flushResolve();
+            this._flushResolve!();
             this._flushPromise = null;
             this._flushResolve = null;
         }

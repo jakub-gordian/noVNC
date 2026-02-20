@@ -1,26 +1,50 @@
-// @ts-nocheck
 import { encodeUTF8 } from './util/strings.ts';
 import EventTargetMixin from './util/eventtarget.ts';
 import legacyCrypto from './crypto/crypto.ts';
 
+interface Credentials {
+    username?: string;
+    password?: string;
+}
+
+interface Sock {
+    rQwait(msg: string, num: number, goback?: number): boolean;
+    rQpeekBytes(len: number, copy?: boolean): Uint8Array;
+    rQshift16(): number;
+    rQshift32(): number;
+    rQshiftBytes(len: number, copy?: boolean): Uint8Array;
+    sQpushBytes(bytes: Uint8Array): void;
+    flush(): void;
+}
+
+interface CipherKey {
+    algorithm: { name: string };
+    encrypt?: (algorithm: any, data: any) => any;
+    decrypt?: (algorithm: any, data: any) => any;
+    exportKey?: () => any;
+}
+
 class RA2Cipher {
+    _cipher: CipherKey | null;
+    _counter: Uint8Array;
+
     constructor() {
         this._cipher = null;
         this._counter = new Uint8Array(16);
     }
 
-    async setKey(key) {
+    async setKey(key: Uint8Array): Promise<void> {
         this._cipher = await legacyCrypto.importKey(
             "raw", key, { name: "AES-EAX" }, false, ["encrypt, decrypt"]);
     }
 
-    async makeMessage(message) {
+    async makeMessage(message: Uint8Array): Promise<Uint8Array> {
         const ad = new Uint8Array([(message.length & 0xff00) >>> 8, message.length & 0xff]);
-        const encrypted = await legacyCrypto.encrypt({
+        const encrypted: Uint8Array = await legacyCrypto.encrypt({
             name: "AES-EAX",
             iv: this._counter,
             additionalData: ad,
-        }, this._cipher, message);
+        } as { name: string }, this._cipher!, message);
         for (let i = 0; i < 16 && this._counter[i]++ === 255; i++);
         const res = new Uint8Array(message.length + 2 + 16);
         res.set(ad);
@@ -28,20 +52,30 @@ class RA2Cipher {
         return res;
     }
 
-    async receiveMessage(length, encrypted) {
+    async receiveMessage(length: number, encrypted: Uint8Array): Promise<Uint8Array | null> {
         const ad = new Uint8Array([(length & 0xff00) >>> 8, length & 0xff]);
-        const res = await legacyCrypto.decrypt({
+        const res: Uint8Array | null = await legacyCrypto.decrypt({
             name: "AES-EAX",
             iv: this._counter,
             additionalData: ad,
-        }, this._cipher, encrypted);
+        } as { name: string }, this._cipher!, encrypted);
         for (let i = 0; i < 16 && this._counter[i]++ === 255; i++);
         return res;
     }
 }
 
 export default class RSAAESAuthenticationState extends EventTargetMixin {
-    constructor(sock, getCredentials) {
+    _hasStarted: boolean;
+    _checkSock: (() => void) | null;
+    _checkCredentials: (() => void) | null;
+    _approveServerResolve: ((value?: void) => void) | null;
+    _sockReject: ((reason?: any) => void) | null;
+    _credentialsReject: ((reason?: any) => void) | null;
+    _approveServerReject: ((reason?: any) => void) | null;
+    _sock: Sock;
+    _getCredentials: () => Credentials;
+
+    constructor(sock: Sock, getCredentials: () => Credentials) {
         super();
         this._hasStarted = false;
         this._checkSock = null;
@@ -54,9 +88,9 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         this._getCredentials = getCredentials;
     }
 
-    _waitSockAsync(len) {
-        return new Promise((resolve, reject) => {
-            const hasData = () => !this._sock.rQwait('RA2', len);
+    _waitSockAsync(len: number): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            const hasData = (): boolean => !this._sock.rQwait('RA2', len);
             if (hasData()) {
                 resolve();
             } else {
@@ -72,15 +106,15 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         });
     }
 
-    _waitApproveKeyAsync() {
-        return new Promise((resolve, reject) => {
+    _waitApproveKeyAsync(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
             this._approveServerResolve = resolve;
             this._approveServerReject = reject;
         });
     }
 
-    _waitCredentialsAsync(subtype) {
-        const hasCredentials = () => {
+    _waitCredentialsAsync(subtype: number): Promise<void> {
+        const hasCredentials = (): boolean => {
             if (subtype === 1 && this._getCredentials().username !== undefined &&
                 this._getCredentials().password !== undefined) {
                 return true;
@@ -89,7 +123,7 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
             }
             return false;
         };
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             if (hasCredentials()) {
                 resolve();
             } else {
@@ -105,7 +139,7 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         });
     }
 
-    checkInternalEvents() {
+    checkInternalEvents(): void {
         if (this._checkSock !== null) {
             this._checkSock();
         }
@@ -114,14 +148,14 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         }
     }
 
-    approveServer() {
+    approveServer(): void {
         if (this._approveServerResolve !== null) {
             this._approveServerResolve();
             this._approveServerResolve = null;
         }
     }
 
-    disconnect() {
+    disconnect(): void {
         if (this._sockReject !== null) {
             this._sockReject(new Error("disconnect normally"));
             this._sockReject = null;
@@ -136,7 +170,7 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         }
     }
 
-    async negotiateRA2neAuthAsync() {
+    async negotiateRA2neAuthAsync(): Promise<void> {
         this._hasStarted = true;
         // 1: Receive server public key
         await this._waitSockAsync(4);
@@ -151,7 +185,7 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         await this._waitSockAsync(serverKeyBytes * 2);
         const serverN = this._sock.rQshiftBytes(serverKeyBytes);
         const serverE = this._sock.rQshiftBytes(serverKeyBytes);
-        const serverRSACipher = await legacyCrypto.importKey(
+        const serverRSACipher: CipherKey = await legacyCrypto.importKey(
             "raw", { n: serverN, e: serverE }, { name: "RSA-PKCS1-v1_5" }, false, ["encrypt"]);
         const serverPublickey = new Uint8Array(4 + serverKeyBytes * 2);
         serverPublickey.set(serverKeyLengthBuffer);
@@ -168,12 +202,12 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         // 2: Send client public key
         const clientKeyLength = 2048;
         const clientKeyBytes = Math.ceil(clientKeyLength / 8);
-        const clientRSACipher = (await legacyCrypto.generateKey({
+        const clientRSACipher: CipherKey = (await legacyCrypto.generateKey({
             name: "RSA-PKCS1-v1_5",
             modulusLength: clientKeyLength,
             publicExponent: new Uint8Array([1, 0, 1]),
-        }, true, ["encrypt"])).privateKey;
-        const clientExportedRSAKey = await legacyCrypto.exportKey("raw", clientRSACipher);
+        } as { name: string }, true, ["encrypt"])).privateKey;
+        const clientExportedRSAKey: { n: Uint8Array; e: Uint8Array } = await legacyCrypto.exportKey("raw", clientRSACipher);
         const clientN = clientExportedRSAKey.n;
         const clientE = clientExportedRSAKey.e;
         const clientPublicKey = new Uint8Array(4 + clientKeyBytes * 2);
@@ -189,7 +223,7 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         // 3: Send client random
         const clientRandom = new Uint8Array(16);
         window.crypto.getRandomValues(clientRandom);
-        const clientEncryptedRandom = await legacyCrypto.encrypt(
+        const clientEncryptedRandom: Uint8Array = await legacyCrypto.encrypt(
             { name: "RSA-PKCS1-v1_5" }, serverRSACipher, clientRandom);
         const clientRandomMessage = new Uint8Array(2 + serverKeyBytes);
         clientRandomMessage[0] = (serverKeyBytes & 0xff00) >>> 8;
@@ -204,22 +238,22 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
             throw new Error("RA2: wrong encrypted message length");
         }
         const serverEncryptedRandom = this._sock.rQshiftBytes(clientKeyBytes);
-        const serverRandom = await legacyCrypto.decrypt(
+        const serverRandom: Uint8Array | null = await legacyCrypto.decrypt(
             { name: "RSA-PKCS1-v1_5" }, clientRSACipher, serverEncryptedRandom);
         if (serverRandom === null || serverRandom.length !== 16) {
             throw new Error("RA2: corrupted server encrypted random");
         }
 
         // 5: Compute session keys and set ciphers
-        let clientSessionKey = new Uint8Array(32);
-        let serverSessionKey = new Uint8Array(32);
-        clientSessionKey.set(serverRandom);
-        clientSessionKey.set(clientRandom, 16);
-        serverSessionKey.set(clientRandom);
-        serverSessionKey.set(serverRandom, 16);
-        clientSessionKey = await window.crypto.subtle.digest("SHA-1", clientSessionKey);
+        let clientSessionKey: Uint8Array | ArrayBuffer = new Uint8Array(32);
+        let serverSessionKey: Uint8Array | ArrayBuffer = new Uint8Array(32);
+        (clientSessionKey as Uint8Array).set(serverRandom);
+        (clientSessionKey as Uint8Array).set(clientRandom, 16);
+        (serverSessionKey as Uint8Array).set(clientRandom);
+        (serverSessionKey as Uint8Array).set(serverRandom, 16);
+        clientSessionKey = await window.crypto.subtle.digest("SHA-1", clientSessionKey as unknown as BufferSource);
         clientSessionKey = new Uint8Array(clientSessionKey).slice(0, 16);
-        serverSessionKey = await window.crypto.subtle.digest("SHA-1", serverSessionKey);
+        serverSessionKey = await window.crypto.subtle.digest("SHA-1", serverSessionKey as unknown as BufferSource);
         serverSessionKey = new Uint8Array(serverSessionKey).slice(0, 16);
         const clientCipher = new RA2Cipher();
         await clientCipher.setKey(clientSessionKey);
@@ -227,14 +261,14 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         await serverCipher.setKey(serverSessionKey);
 
         // 6: Compute and exchange hashes
-        let serverHash = new Uint8Array(8 + serverKeyBytes * 2 + clientKeyBytes * 2);
-        let clientHash = new Uint8Array(8 + serverKeyBytes * 2 + clientKeyBytes * 2);
-        serverHash.set(serverPublickey);
-        serverHash.set(clientPublicKey, 4 + serverKeyBytes * 2);
-        clientHash.set(clientPublicKey);
-        clientHash.set(serverPublickey, 4 + clientKeyBytes * 2);
-        serverHash = await window.crypto.subtle.digest("SHA-1", serverHash);
-        clientHash = await window.crypto.subtle.digest("SHA-1", clientHash);
+        let serverHash: Uint8Array | ArrayBuffer = new Uint8Array(8 + serverKeyBytes * 2 + clientKeyBytes * 2);
+        let clientHash: Uint8Array | ArrayBuffer = new Uint8Array(8 + serverKeyBytes * 2 + clientKeyBytes * 2);
+        (serverHash as Uint8Array).set(serverPublickey);
+        (serverHash as Uint8Array).set(clientPublicKey, 4 + serverKeyBytes * 2);
+        (clientHash as Uint8Array).set(clientPublicKey);
+        (clientHash as Uint8Array).set(serverPublickey, 4 + clientKeyBytes * 2);
+        serverHash = await window.crypto.subtle.digest("SHA-1", serverHash as unknown as BufferSource);
+        clientHash = await window.crypto.subtle.digest("SHA-1", clientHash as unknown as BufferSource);
         serverHash = new Uint8Array(serverHash);
         clientHash = new Uint8Array(clientHash);
         this._sock.sQpushBytes(await clientCipher.makeMessage(clientHash));
@@ -249,7 +283,7 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
             throw new Error("RA2: failed to authenticate the message");
         }
         for (let i = 0; i < 20; i++) {
-            if (serverHashReceived[i] !== serverHash[i]) {
+            if (serverHashReceived[i] !== (serverHash as Uint8Array)[i]) {
                 throw new Error("RA2: wrong server hash");
             }
         }
@@ -259,12 +293,12 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         if (this._sock.rQshift16() !== 1) {
             throw new Error("RA2: wrong subtype");
         }
-        let subtype = (await serverCipher.receiveMessage(
+        let subtypeArray = (await serverCipher.receiveMessage(
             1, this._sock.rQshiftBytes(1 + 16)));
-        if (subtype === null) {
+        if (subtypeArray === null) {
             throw new Error("RA2: failed to authenticate the message");
         }
-        subtype = subtype[0];
+        const subtype = subtypeArray[0];
         let waitCredentials = this._waitCredentialsAsync(subtype);
         if (subtype === 1) {
             if (this._getCredentials().username === undefined ||
@@ -283,13 +317,13 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
             throw new Error("RA2: wrong subtype");
         }
         await waitCredentials;
-        let username;
+        let username: string;
         if (subtype === 1) {
-            username = encodeUTF8(this._getCredentials().username).slice(0, 255);
+            username = encodeUTF8(this._getCredentials().username!).slice(0, 255);
         } else {
             username = "";
         }
-        const password = encodeUTF8(this._getCredentials().password).slice(0, 255);
+        const password = encodeUTF8(this._getCredentials().password!).slice(0, 255);
         const credentials = new Uint8Array(username.length + password.length + 2);
         credentials[0] = username.length;
         credentials[username.length + 1] = password.length;
@@ -303,11 +337,11 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         this._sock.flush();
     }
 
-    get hasStarted() {
+    get hasStarted(): boolean {
         return this._hasStarted;
     }
 
-    set hasStarted(s) {
+    set hasStarted(s: boolean) {
         this._hasStarted = s;
     }
 }
