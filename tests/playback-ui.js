@@ -1,6 +1,6 @@
 /* global VNC_frame_data, VNC_frame_encoding */
 
-import * as WebUtil from '../app/webutil.js';
+import * as WebUtil from '../app/webutil.ts';
 import RecordingPlayer from './playback.js';
 import Base64 from '../core/base64.ts';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -7,7 +8,7 @@
  */
 
 import * as Log from '../core/util/logging.ts';
-import _, { l10n } from './localization.js';
+import _, { l10n } from './localization.ts';
 import { isTouchDevice, isMac, isIOS, isAndroid, isChromeOS, isSafari,
          hasScrollbarGutter, dragThreshold }
     from '../core/util/browser.ts';
@@ -16,7 +17,7 @@ import KeyTable from "../core/input/keysym.ts";
 import keysyms from "../core/input/keysymdef.ts";
 import Keyboard from "../core/input/keyboard.ts";
 import RFB from "../core/rfb.ts";
-import * as WebUtil from "./webutil.js";
+import * as WebUtil from "./webutil.ts";
 
 // Import mediabunny for MP4 encoding (dynamically loaded when needed)
 let mediabunnyModule = null;

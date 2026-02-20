@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach, afterEach, spyOn } from "bun:test";
 
-import _, { Localizer, l10n } from '../app/localization.js';
+import _, { Localizer, l10n } from '../app/localization.ts';
 
 describe('Localization', function () {
     let origNavigator;
