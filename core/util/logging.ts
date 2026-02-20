@@ -29,22 +29,32 @@ export function initLogging(level?: LogLevel): void {
     Debug = Info = Warn = Error = () => {};
 
     if (typeof window.console !== "undefined") {
-        /* eslint-disable no-console, no-fallthrough */
+        /* eslint-disable no-console */
         switch (level) {
             case 'debug':
                 Debug = console.debug.bind(window.console);
+                Info  = console.info.bind(window.console);
+                Warn  = console.warn.bind(window.console);
+                Error = console.error.bind(window.console);
+                break;
             case 'info':
                 Info  = console.info.bind(window.console);
+                Warn  = console.warn.bind(window.console);
+                Error = console.error.bind(window.console);
+                break;
             case 'warn':
                 Warn  = console.warn.bind(window.console);
+                Error = console.error.bind(window.console);
+                break;
             case 'error':
                 Error = console.error.bind(window.console);
+                break;
             case 'none':
                 break;
             default:
                 throw new window.Error("invalid logging type '" + level + "'");
         }
-        /* eslint-enable no-console, no-fallthrough */
+        /* eslint-enable no-console */
     }
 }
 

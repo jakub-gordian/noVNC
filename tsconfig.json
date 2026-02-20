@@ -15,7 +15,9 @@
         "allowJs": true,
         "checkJs": false,
         "allowImportingTsExtensions": true,
-        "noUncheckedIndexedAccess": true
+        "noUncheckedIndexedAccess": true,
+        "noImplicitOverride": true,
+        "noFallthroughCasesInSwitch": true
     },
     "include": [
         "core/**/*.ts",
