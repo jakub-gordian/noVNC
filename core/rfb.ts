@@ -10,7 +10,7 @@
 import { toUnsigned32bit, toSigned32bit } from './util/int.ts';
 import * as Log from './util/logging.ts';
 import { encodeUTF8, decodeUTF8 } from './util/strings.ts';
-import { dragThreshold, supportsWebCodecsH264Decode } from './util/browser.ts';
+import { dragThreshold, supportsWebCodecsH264Decode, checkWebCodecsH264DecodeSupport } from './util/browser.ts';
 import { clientToElement } from './util/element.ts';
 import { setCapture } from './util/events.ts';
 import EventTargetMixin from './util/eventtarget.ts';
@@ -477,6 +477,9 @@ export default class RFB extends EventTargetMixin {
         this._decoders[encodings.encodingZRLE] = new ZRLEDecoder();
         this._decoders[encodings.encodingJPEG] = new JPEGDecoder();
         this._decoders[encodings.encodingH264] = new H264Decoder();
+
+        // Lazily detect H.264 support (updates supportsWebCodecsH264Decode)
+        checkWebCodecsH264DecodeSupport();
 
         // NB: nothing that needs explicit teardown should be done
         // before this point, since this can throw an exception

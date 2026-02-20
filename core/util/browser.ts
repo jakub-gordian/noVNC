@@ -73,7 +73,7 @@ export const hasScrollbarGutter: boolean = _hasScrollbarGutter;
 
 export let supportsWebCodecsH264Decode: boolean = false;
 
-async function _checkWebCodecsH264DecodeSupport(): Promise<boolean> {
+export async function checkWebCodecsH264DecodeSupport(): Promise<boolean> {
     if (!('VideoDecoder' in window)) {
         return false;
     }
@@ -147,9 +147,9 @@ async function _checkWebCodecsH264DecodeSupport(): Promise<boolean> {
         return false;
     }
 
+    supportsWebCodecsH264Decode = true;
     return true;
 }
-supportsWebCodecsH264Decode = await _checkWebCodecsH264DecodeSupport();
 
 /*
  * The functions for detection of platforms and browsers below are exported

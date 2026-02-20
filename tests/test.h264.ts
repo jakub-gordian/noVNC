@@ -7,7 +7,6 @@ import Display from '../core/display.ts';
 import { H264Parser } from '../core/decoders/h264.ts';
 import H264Decoder from '../core/decoders/h264.ts';
 import Base64 from '../core/base64.ts';
-import { supportsWebCodecsH264Decode } from '../core/util/browser.ts';
 
 import FakeWebSocket from './fake.websocket.ts';
 

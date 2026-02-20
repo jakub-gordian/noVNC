@@ -163,6 +163,28 @@ interface RFBOptions {
 | `desktopsize` | `{ width, height }` | Desktop resized |
 | `capabilities` | `{ capabilities }` | Server capabilities updated |
 
+## H.264 Support Detection
+
+noVNC detects WebCodecs H.264 decode support **lazily** — the check runs
+asynchronously when `RFB` is constructed and updates a module-level flag before
+encoding negotiation. This avoids top-level `await` in `core/util/browser.ts`,
+which would break bundlers that cannot handle top-level await in transitive
+dependencies (including Bun's HTML bundler).
+
+If you need to check H.264 support yourself (e.g. for UI hints), import and
+await the check function:
+
+```ts
+import { checkWebCodecsH264DecodeSupport } from "@novnc/novnc/core/util/browser.ts";
+
+const hasH264 = await checkWebCodecsH264DecodeSupport();
+console.log("H.264 decode supported:", hasH264);
+```
+
+The result is cached — once it resolves to `true`, subsequent calls return
+immediately. You do **not** need to call this before constructing `RFB`; the
+constructor handles it automatically.
+
 ## Serving to the Browser
 
 Since browsers cannot load `.ts` files directly, you need one of these approaches:
