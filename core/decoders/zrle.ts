@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2021 The noVNC authors
@@ -9,11 +8,17 @@
  */
 
 import Inflate from "../inflator.ts";
+import type { DecoderSock, DecoderDisplay } from '../types.ts';
 
-const ZRLE_TILE_WIDTH = 64;
-const ZRLE_TILE_HEIGHT = 64;
+const ZRLE_TILE_WIDTH: number = 64;
+const ZRLE_TILE_HEIGHT: number = 64;
 
 export default class ZRLEDecoder {
+    private _length: number;
+    private _inflator: Inflate;
+    private _pixelBuffer: Uint8Array;
+    private _tileBuffer: Uint8Array;
+
     constructor() {
         this._length = 0;
         this._inflator = new Inflate();
@@ -22,7 +27,8 @@ export default class ZRLEDecoder {
         this._tileBuffer = new Uint8Array(ZRLE_TILE_WIDTH * ZRLE_TILE_HEIGHT * 4);
     }
 
-    decodeRect(x, y, width, height, sock, display, depth) {
+    decodeRect(x: number, y: number, width: number, height: number,
+               sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         if (this._length === 0) {
             if (sock.rQwait("ZLib data length", 4)) {
                 return false;
@@ -33,35 +39,35 @@ export default class ZRLEDecoder {
             return false;
         }
 
-        const data = sock.rQshiftBytes(this._length, false);
+        const data: Uint8Array = sock.rQshiftBytes(this._length, false);
 
         this._inflator.setInput(data);
 
         for (let ty = y; ty < y + height; ty += ZRLE_TILE_HEIGHT) {
-            let th = Math.min(ZRLE_TILE_HEIGHT, y + height - ty);
+            let th: number = Math.min(ZRLE_TILE_HEIGHT, y + height - ty);
 
             for (let tx = x; tx < x + width; tx += ZRLE_TILE_WIDTH) {
-                let tw = Math.min(ZRLE_TILE_WIDTH, x + width - tx);
+                let tw: number = Math.min(ZRLE_TILE_WIDTH, x + width - tx);
 
-                const tileSize = tw * th;
-                const subencoding = this._inflator.inflate(1)[0];
+                const tileSize: number = tw * th;
+                const subencoding: number = this._inflator.inflate(1)[0];
                 if (subencoding === 0) {
                     // raw data
-                    const data = this._readPixels(tileSize);
-                    display.blitImage(tx, ty, tw, th, data, 0, false);
+                    const tileData: Uint8Array = this._readPixels(tileSize);
+                    display.blitImage(tx, ty, tw, th, tileData, 0, false);
                 } else if (subencoding === 1) {
                     // solid
-                    const background = this._readPixels(1);
+                    const background: Uint8Array = this._readPixels(1);
                     display.fillRect(tx, ty, tw, th, [background[0], background[1], background[2]]);
                 } else if (subencoding >= 2 && subencoding <= 16) {
-                    const data = this._decodePaletteTile(subencoding, tileSize, tw, th);
-                    display.blitImage(tx, ty, tw, th, data, 0, false);
+                    const tileData: Uint8Array = this._decodePaletteTile(subencoding, tileSize, tw, th);
+                    display.blitImage(tx, ty, tw, th, tileData, 0, false);
                 } else if (subencoding === 128) {
-                    const data = this._decodeRLETile(tileSize);
-                    display.blitImage(tx, ty, tw, th, data, 0, false);
+                    const tileData: Uint8Array = this._decodeRLETile(tileSize);
+                    display.blitImage(tx, ty, tw, th, tileData, 0, false);
                 } else if (subencoding >= 130 && subencoding <= 255) {
-                    const data = this._decodeRLEPaletteTile(subencoding - 128, tileSize);
-                    display.blitImage(tx, ty, tw, th, data, 0, false);
+                    const tileData: Uint8Array = this._decodeRLEPaletteTile(subencoding - 128, tileSize);
+                    display.blitImage(tx, ty, tw, th, tileData, 0, false);
                 } else {
                     throw new Error('Unknown subencoding: ' + subencoding);
                 }
@@ -71,7 +77,7 @@ export default class ZRLEDecoder {
         return true;
     }
 
-    _getBitsPerPixelInPalette(paletteSize) {
+    private _getBitsPerPixelInPalette(paletteSize: number): number {
         if (paletteSize <= 2) {
             return 1;
         } else if (paletteSize <= 4) {
@@ -79,11 +85,13 @@ export default class ZRLEDecoder {
         } else if (paletteSize <= 16) {
             return 4;
         }
+        // Should not reach here based on usage, but return a safe default
+        return 4;
     }
 
-    _readPixels(pixels) {
-        let data = this._pixelBuffer;
-        const buffer = this._inflator.inflate(3*pixels);
+    private _readPixels(pixels: number): Uint8Array {
+        let data: Uint8Array = this._pixelBuffer;
+        const buffer: Uint8Array = this._inflator.inflate(3*pixels);
         for (let i = 0, j = 0; i < pixels*4; i += 4, j += 3) {
             data[i]     = buffer[j];
             data[i + 1] = buffer[j + 1];
@@ -93,23 +101,24 @@ export default class ZRLEDecoder {
         return data;
     }
 
-    _decodePaletteTile(paletteSize, tileSize, tilew, tileh) {
-        const data = this._tileBuffer;
-        const palette = this._readPixels(paletteSize);
-        const bitsPerPixel = this._getBitsPerPixelInPalette(paletteSize);
-        const mask = (1 << bitsPerPixel) - 1;
+    private _decodePaletteTile(paletteSize: number, tileSize: number,
+                               tilew: number, tileh: number): Uint8Array {
+        const data: Uint8Array = this._tileBuffer;
+        const palette: Uint8Array = this._readPixels(paletteSize);
+        const bitsPerPixel: number = this._getBitsPerPixelInPalette(paletteSize);
+        const mask: number = (1 << bitsPerPixel) - 1;
 
-        let offset = 0;
-        let encoded = this._inflator.inflate(1)[0];
+        let offset: number = 0;
+        let encoded: number = this._inflator.inflate(1)[0];
 
         for (let y=0; y<tileh; y++) {
-            let shift = 8-bitsPerPixel;
+            let shift: number = 8-bitsPerPixel;
             for (let x=0; x<tilew; x++) {
                 if (shift<0) {
                     shift=8-bitsPerPixel;
                     encoded = this._inflator.inflate(1)[0];
                 }
-                let indexInPalette = (encoded>>shift) & mask;
+                let indexInPalette: number = (encoded>>shift) & mask;
 
                 data[offset] = palette[indexInPalette * 4];
                 data[offset + 1] = palette[indexInPalette * 4 + 1];
@@ -125,12 +134,12 @@ export default class ZRLEDecoder {
         return data;
     }
 
-    _decodeRLETile(tileSize) {
-        const data = this._tileBuffer;
-        let i = 0;
+    private _decodeRLETile(tileSize: number): Uint8Array {
+        const data: Uint8Array = this._tileBuffer;
+        let i: number = 0;
         while (i < tileSize) {
-            const pixel = this._readPixels(1);
-            const length = this._readRLELength();
+            const pixel: Uint8Array = this._readPixels(1);
+            const length: number = this._readRLELength();
             for (let j = 0; j < length; j++) {
                 data[i * 4] = pixel[0];
                 data[i * 4 + 1] = pixel[1];
@@ -142,16 +151,16 @@ export default class ZRLEDecoder {
         return data;
     }
 
-    _decodeRLEPaletteTile(paletteSize, tileSize) {
-        const data = this._tileBuffer;
+    private _decodeRLEPaletteTile(paletteSize: number, tileSize: number): Uint8Array {
+        const data: Uint8Array = this._tileBuffer;
 
         // palette
-        const palette = this._readPixels(paletteSize);
+        const palette: Uint8Array = this._readPixels(paletteSize);
 
-        let offset = 0;
+        let offset: number = 0;
         while (offset < tileSize) {
-            let indexInPalette = this._inflator.inflate(1)[0];
-            let length = 1;
+            let indexInPalette: number = this._inflator.inflate(1)[0];
+            let length: number = 1;
             if (indexInPalette >= 128) {
                 indexInPalette -= 128;
                 length = this._readRLELength();
@@ -174,9 +183,9 @@ export default class ZRLEDecoder {
         return data;
     }
 
-    _readRLELength() {
-        let length = 0;
-        let current = 0;
+    private _readRLELength(): number {
+        let length: number = 0;
+        let current: number = 0;
         do {
             current = this._inflator.inflate(1)[0];
             length += current;

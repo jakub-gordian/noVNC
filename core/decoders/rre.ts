@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -8,12 +7,17 @@
  *
  */
 
+import type { DecoderSock, DecoderDisplay } from '../types.ts';
+
 export default class RREDecoder {
+    private _subrects: number;
+
     constructor() {
         this._subrects = 0;
     }
 
-    decodeRect(x, y, width, height, sock, display, depth) {
+    decodeRect(x: number, y: number, width: number, height: number,
+               sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         if (this._subrects === 0) {
             if (sock.rQwait("RRE", 4 + 4)) {
                 return false;
@@ -21,7 +25,7 @@ export default class RREDecoder {
 
             this._subrects = sock.rQshift32();
 
-            let color = sock.rQshiftBytes(4);  // Background
+            let color: Uint8Array = sock.rQshiftBytes(4);  // Background
             display.fillRect(x, y, width, height, color);
         }
 
@@ -30,11 +34,11 @@ export default class RREDecoder {
                 return false;
             }
 
-            let color = sock.rQshiftBytes(4);
-            let sx = sock.rQshift16();
-            let sy = sock.rQshift16();
-            let swidth = sock.rQshift16();
-            let sheight = sock.rQshift16();
+            let color: Uint8Array = sock.rQshiftBytes(4);
+            let sx: number = sock.rQshift16();
+            let sy: number = sock.rQshift16();
+            let swidth: number = sock.rQshift16();
+            let sheight: number = sock.rQshift16();
             display.fillRect(x + sx, y + sy, swidth, sheight, color);
 
             this._subrects--;

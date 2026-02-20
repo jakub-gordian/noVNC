@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -9,15 +8,39 @@
  */
 
 import * as Log from '../util/logging.ts';
+import type { DecoderSock, DecoderDisplay } from '../types.ts';
 
 export default class HextileDecoder {
+    private _tiles: number;
+    private _lastsubencoding: number;
+    private _tileBuffer: Uint8Array;
+    private _tilesX: number;
+    private _tilesY: number;
+    private _totalTiles: number;
+    private _background: Uint8Array;
+    private _foreground: Uint8Array;
+    private _tileX: number;
+    private _tileY: number;
+    private _tileW: number;
+    private _tileH: number;
+
     constructor() {
         this._tiles = 0;
         this._lastsubencoding = 0;
         this._tileBuffer = new Uint8Array(16 * 16 * 4);
+        this._tilesX = 0;
+        this._tilesY = 0;
+        this._totalTiles = 0;
+        this._background = new Uint8Array(4);
+        this._foreground = new Uint8Array(4);
+        this._tileX = 0;
+        this._tileY = 0;
+        this._tileW = 0;
+        this._tileH = 0;
     }
 
-    decodeRect(x, y, width, height, sock, display, depth) {
+    decodeRect(x: number, y: number, width: number, height: number,
+               sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         if (this._tiles === 0) {
             this._tilesX = Math.ceil(width / 16);
             this._tilesY = Math.ceil(height / 16);
@@ -26,25 +49,25 @@ export default class HextileDecoder {
         }
 
         while (this._tiles > 0) {
-            let bytes = 1;
+            let bytes: number = 1;
 
             if (sock.rQwait("HEXTILE", bytes)) {
                 return false;
             }
 
-            let subencoding = sock.rQpeek8();
+            let subencoding: number = sock.rQpeek8();
             if (subencoding > 30) {  // Raw
                 throw new Error("Illegal hextile subencoding (subencoding: " +
                             subencoding + ")");
             }
 
-            const currTile = this._totalTiles - this._tiles;
-            const tileX = currTile % this._tilesX;
-            const tileY = Math.floor(currTile / this._tilesX);
-            const tx = x + tileX * 16;
-            const ty = y + tileY * 16;
-            const tw = Math.min(16, (x + width) - tx);
-            const th = Math.min(16, (y + height) - ty);
+            const currTile: number = this._totalTiles - this._tiles;
+            const tileX: number = currTile % this._tilesX;
+            const tileY: number = Math.floor(currTile / this._tilesX);
+            const tx: number = x + tileX * 16;
+            const ty: number = y + tileY * 16;
+            const tw: number = Math.min(16, (x + width) - tx);
+            const th: number = Math.min(16, (y + height) - ty);
 
             // Figure out how much we are expecting
             if (subencoding & 0x01) {  // Raw
@@ -63,7 +86,7 @@ export default class HextileDecoder {
                         return false;
                     }
 
-                    let subrects = sock.rQpeekBytes(bytes).at(-1);
+                    let subrects: number = sock.rQpeekBytes(bytes).at(-1)!;
                     if (subencoding & 0x10) {  // SubrectsColoured
                         bytes += subrects * (4 + 2);
                     } else {
@@ -86,8 +109,8 @@ export default class HextileDecoder {
                     display.fillRect(tx, ty, tw, th, this._background);
                 }
             } else if (subencoding & 0x01) {  // Raw
-                let pixels = tw * th;
-                let data = sock.rQshiftBytes(pixels * 4, false);
+                let pixels: number = tw * th;
+                let data: Uint8Array = sock.rQshiftBytes(pixels * 4, false);
                 // Max sure the image is fully opaque
                 for (let i = 0;i <  pixels;i++) {
                     data[i * 4 + 3] = 255;
@@ -103,22 +126,22 @@ export default class HextileDecoder {
 
                 this._startTile(tx, ty, tw, th, this._background);
                 if (subencoding & 0x08) {  // AnySubrects
-                    let subrects = sock.rQshift8();
+                    let subrects: number = sock.rQshift8();
 
                     for (let s = 0; s < subrects; s++) {
-                        let color;
+                        let color: Uint8Array;
                         if (subencoding & 0x10) {  // SubrectsColoured
                             color = sock.rQshiftBytes(4);
                         } else {
                             color = this._foreground;
                         }
-                        const xy = sock.rQshift8();
-                        const sx = (xy >> 4);
-                        const sy = (xy & 0x0f);
+                        const xy: number = sock.rQshift8();
+                        const sx: number = (xy >> 4);
+                        const sy: number = (xy & 0x0f);
 
-                        const wh = sock.rQshift8();
-                        const sw = (wh >> 4) + 1;
-                        const sh = (wh & 0x0f) + 1;
+                        const wh: number = sock.rQshift8();
+                        const sw: number = (wh >> 4) + 1;
+                        const sh: number = (wh & 0x0f) + 1;
 
                         this._subTile(sx, sy, sw, sh, color);
                     }
@@ -133,17 +156,17 @@ export default class HextileDecoder {
     }
 
     // start updating a tile
-    _startTile(x, y, width, height, color) {
+    private _startTile(x: number, y: number, width: number, height: number, color: Uint8Array): void {
         this._tileX = x;
         this._tileY = y;
         this._tileW = width;
         this._tileH = height;
 
-        const red = color[0];
-        const green = color[1];
-        const blue = color[2];
+        const red: number = color[0];
+        const green: number = color[1];
+        const blue: number = color[2];
 
-        const data = this._tileBuffer;
+        const data: Uint8Array = this._tileBuffer;
         for (let i = 0; i < width * height * 4; i += 4) {
             data[i]     = red;
             data[i + 1] = green;
@@ -153,18 +176,18 @@ export default class HextileDecoder {
     }
 
     // update sub-rectangle of the current tile
-    _subTile(x, y, w, h, color) {
-        const red = color[0];
-        const green = color[1];
-        const blue = color[2];
-        const xend = x + w;
-        const yend = y + h;
+    private _subTile(x: number, y: number, w: number, h: number, color: Uint8Array): void {
+        const red: number = color[0];
+        const green: number = color[1];
+        const blue: number = color[2];
+        const xend: number = x + w;
+        const yend: number = y + h;
 
-        const data = this._tileBuffer;
-        const width = this._tileW;
+        const data: Uint8Array = this._tileBuffer;
+        const width: number = this._tileW;
         for (let j = y; j < yend; j++) {
             for (let i = x; i < xend; i++) {
-                const p = (i + (j * width)) * 4;
+                const p: number = (i + (j * width)) * 4;
                 data[p]     = red;
                 data[p + 1] = green;
                 data[p + 2] = blue;
@@ -174,7 +197,7 @@ export default class HextileDecoder {
     }
 
     // draw the current tile to the screen
-    _finishTile(display) {
+    private _finishTile(display: DecoderDisplay): void {
         display.blitImage(this._tileX, this._tileY,
                           this._tileW, this._tileH,
                           this._tileBuffer, 0);

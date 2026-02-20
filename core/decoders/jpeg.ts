@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -8,7 +7,13 @@
  *
  */
 
+import type { DecoderSock, DecoderDisplay } from '../types.ts';
+
 export default class JPEGDecoder {
+    private _cachedQuantTables: Uint8Array[];
+    private _cachedHuffmanTables: Uint8Array[];
+    private _segments: Uint8Array[];
+
     constructor() {
         // RealVNC will reuse the quantization tables
         // and Huffman tables, so we need to cache them.
@@ -18,7 +23,8 @@ export default class JPEGDecoder {
         this._segments = [];
     }
 
-    decodeRect(x, y, width, height, sock, display, depth) {
+    decodeRect(x: number, y: number, width: number, height: number,
+               sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         // A rect of JPEG encodings is simply a JPEG file
         while (true) {
             let segment = this._readSegment(sock);
@@ -32,10 +38,10 @@ export default class JPEGDecoder {
             }
         }
 
-        let huffmanTables = [];
-        let quantTables = [];
+        let huffmanTables: Uint8Array[] = [];
+        let quantTables: Uint8Array[] = [];
         for (let segment of this._segments) {
-            let type = segment[1];
+            let type: number = segment[1];
             if (type === 0xC4) {
                 // Huffman tables
                 huffmanTables.push(segment);
@@ -45,7 +51,7 @@ export default class JPEGDecoder {
             }
         }
 
-        const sofIndex = this._segments.findIndex(
+        const sofIndex: number = this._segments.findIndex(
             x => x[1] == 0xC0 || x[1] == 0xC2
         );
         if (sofIndex == -1) {
@@ -61,12 +67,12 @@ export default class JPEGDecoder {
                                   ...this._cachedHuffmanTables);
         }
 
-        let length = 0;
+        let length: number = 0;
         for (let segment of this._segments) {
             length += segment.length;
         }
 
-        let data = new Uint8Array(length);
+        let data: Uint8Array = new Uint8Array(length);
         length = 0;
         for (let segment of this._segments) {
             data.set(segment, length);
@@ -87,17 +93,17 @@ export default class JPEGDecoder {
         return true;
     }
 
-    _readSegment(sock) {
+    private _readSegment(sock: DecoderSock): Uint8Array | null {
         if (sock.rQwait("JPEG", 2)) {
             return null;
         }
 
-        let marker = sock.rQshift8();
+        let marker: number = sock.rQshift8();
         if (marker != 0xFF) {
             throw new Error("Illegal JPEG marker received (byte: " +
                                marker + ")");
         }
-        let type = sock.rQshift8();
+        let type: number = sock.rQshift8();
         if (type >= 0xD0 && type <= 0xD9 || type == 0x01) {
             // No length after marker
             return new Uint8Array([marker, type]);
@@ -107,7 +113,7 @@ export default class JPEGDecoder {
             return null;
         }
 
-        let length = sock.rQshift16();
+        let length: number = sock.rQshift16();
         if (length < 2) {
             throw new Error("Illegal JPEG length received (length: " +
                                length + ")");
@@ -117,7 +123,7 @@ export default class JPEGDecoder {
             return null;
         }
 
-        let extra = 0;
+        let extra: number = 0;
         if (type === 0xDA) {
             // start of scan
             extra += 2;
@@ -125,9 +131,9 @@ export default class JPEGDecoder {
                 if (sock.rQwait("JPEG", length-2+extra, 4)) {
                     return null;
                 }
-                let data = sock.rQpeekBytes(length-2+extra, false);
-                if (data.at(-2) === 0xFF && data.at(-1) !== 0x00 &&
-                    !(data.at(-1) >= 0xD0 && data.at(-1) <= 0xD7)) {
+                let peekData: Uint8Array = sock.rQpeekBytes(length-2+extra, false);
+                if (peekData.at(-2) === 0xFF && peekData.at(-1) !== 0x00 &&
+                    !(peekData.at(-1)! >= 0xD0 && peekData.at(-1)! <= 0xD7)) {
                     extra -= 2;
                     break;
                 }
@@ -135,7 +141,7 @@ export default class JPEGDecoder {
             }
         }
 
-        let segment = new Uint8Array(2 + length + extra);
+        let segment: Uint8Array = new Uint8Array(2 + length + extra);
         segment[0] = marker;
         segment[1] = type;
         segment[2] = length >> 8;

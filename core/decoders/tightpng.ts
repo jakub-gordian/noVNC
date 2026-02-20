@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -9,9 +8,11 @@
  */
 
 import TightDecoder from './tight.ts';
+import type { DecoderSock, DecoderDisplay } from '../types.ts';
 
 export default class TightPNGDecoder extends TightDecoder {
-    _pngRect(x, y, width, height, sock, display, depth) {
+    protected _pngRect(x: number, y: number, width: number, height: number,
+                       sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         let data = this._readData(sock);
         if (data === null) {
             return false;
@@ -22,7 +23,8 @@ export default class TightPNGDecoder extends TightDecoder {
         return true;
     }
 
-    _basicRect(ctl, x, y, width, height, sock, display, depth) {
+    protected _basicRect(ctl: number, x: number, y: number, width: number, height: number,
+                         sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         throw new Error("BasicCompression received in TightPNG rect");
     }
 }

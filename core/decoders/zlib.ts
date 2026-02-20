@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2024 The noVNC authors
@@ -9,14 +8,19 @@
  */
 
 import Inflator from "../inflator.ts";
+import type { DecoderSock, DecoderDisplay } from '../types.ts';
 
 export default class ZlibDecoder {
+    private _zlib: Inflator;
+    private _length: number;
+
     constructor() {
         this._zlib = new Inflator();
         this._length = 0;
     }
 
-    decodeRect(x, y, width, height, sock, display, depth) {
+    decodeRect(x: number, y: number, width: number, height: number,
+               sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         if ((width === 0) || (height === 0)) {
             return true;
         }
@@ -33,7 +37,7 @@ export default class ZlibDecoder {
             return false;
         }
 
-        let data = new Uint8Array(sock.rQshiftBytes(this._length, false));
+        let data: Uint8Array = new Uint8Array(sock.rQshiftBytes(this._length, false));
         this._length = 0;
 
         this._zlib.setInput(data);

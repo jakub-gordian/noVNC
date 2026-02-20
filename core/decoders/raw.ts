@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -9,13 +8,18 @@
  */
 
 import * as Log from '../util/logging.ts';
+import type { DecoderSock, DecoderDisplay } from '../types.ts';
 
 export default class RawDecoder {
+    private _lines: number;
+
     constructor() {
         this._lines = 0;
     }
 
-    decodeRect(x, y, width, height, sock, display, depth, bgrMode = false) {
+    decodeRect(x: number, y: number, width: number, height: number,
+               sock: DecoderSock, display: DecoderDisplay, depth: number,
+               bgrMode: boolean = false): boolean {
         // Always log BGR mode to confirm it's being used
         if (this._lines === 0) {
             Log.Info("RawDecoder: Processing rectangle with " +
@@ -30,17 +34,17 @@ export default class RawDecoder {
             this._lines = height;
         }
 
-        const pixelSize = depth == 8 ? 1 : 4;
-        const bytesPerLine = width * pixelSize;
+        const pixelSize: number = depth == 8 ? 1 : 4;
+        const bytesPerLine: number = width * pixelSize;
 
         while (this._lines > 0) {
             if (sock.rQwait("RAW", bytesPerLine)) {
                 return false;
             }
 
-            const curY = y + (height - this._lines);
+            const curY: number = y + (height - this._lines);
 
-            let data = sock.rQshiftBytes(bytesPerLine, false);
+            let data: Uint8Array = sock.rQshiftBytes(bytesPerLine, false);
 
             // Convert data if needed
             if (depth == 8) {
@@ -56,16 +60,16 @@ export default class RawDecoder {
                 // Log when we're performing BGR swap
                 if (curY === y) {
                     Log.Info("RawDecoder: Applying BGR swap for line " + curY);
-                    
+
                     // Log sample data before swap
                     let beforeSample = "";
                     for (let i = 0; i < Math.min(4, width); i++) {
-                        beforeSample += "[" + data[i*4] + "," + data[i*4+1] + "," + 
+                        beforeSample += "[" + data[i*4] + "," + data[i*4+1] + "," +
                                    data[i*4+2] + "] ";
                     }
                     Log.Info("Before swap sample: " + beforeSample);
                 }
-                
+
                 // In bgrMode we need to switch the red and blue bytes
                 for (let i = 0; i < width; i++) {
                     let j = i * 4;
@@ -73,12 +77,12 @@ export default class RawDecoder {
                     data[j] = data[j + 2];
                     data[j + 2] = red;
                 }
-                
+
                 // Log sample data after swap for the first line
                 if (curY === y) {
                     let afterSample = "";
                     for (let i = 0; i < Math.min(4, width); i++) {
-                        afterSample += "[" + data[i*4] + "," + data[i*4+1] + "," + 
+                        afterSample += "[" + data[i*4] + "," + data[i*4+1] + "," +
                                   data[i*4+2] + "] ";
                     }
                     Log.Info("After swap sample: " + afterSample);

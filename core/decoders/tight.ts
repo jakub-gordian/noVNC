@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -11,14 +10,24 @@
 
 import * as Log from '../util/logging.ts';
 import Inflator from "../inflator.ts";
+import type { DecoderSock, DecoderDisplay } from '../types.ts';
 
 export default class TightDecoder {
+    protected _ctl: number | null;
+    protected _filter: number | null;
+    protected _numColors: number;
+    protected _palette: Uint8Array;
+    protected _len: number;
+    protected _zlibs: Inflator[];
+    private _scratchBuffer: Uint8Array | null;
+
     constructor() {
         this._ctl = null;
         this._filter = null;
         this._numColors = 0;
         this._palette = new Uint8Array(1024);  // 256 * 4 (max palette size * max bytes-per-pixel)
         this._len = 0;
+        this._scratchBuffer = null;
 
         this._zlibs = [];
         for (let i = 0; i < 4; i++) {
@@ -26,7 +35,8 @@ export default class TightDecoder {
         }
     }
 
-    decodeRect(x, y, width, height, sock, display, depth) {
+    decodeRect(x: number, y: number, width: number, height: number,
+               sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         if (this._ctl === null) {
             if (sock.rQwait("TIGHT compression-control", 1)) {
                 return false;
@@ -46,7 +56,7 @@ export default class TightDecoder {
             this._ctl = this._ctl >> 4;
         }
 
-        let ret;
+        let ret: boolean;
 
         if (this._ctl === 0x08) {
             ret = this._fillRect(x, y, width, height,
@@ -57,8 +67,8 @@ export default class TightDecoder {
         } else if (this._ctl === 0x0A) {
             ret = this._pngRect(x, y, width, height,
                                 sock, display, depth);
-        } else if ((this._ctl & 0x08) == 0) {
-            ret = this._basicRect(this._ctl, x, y, width, height,
+        } else if ((this._ctl! & 0x08) == 0) {
+            ret = this._basicRect(this._ctl!, x, y, width, height,
                                   sock, display, depth);
         } else {
             throw new Error("Illegal tight compression received (ctl: " +
@@ -72,18 +82,20 @@ export default class TightDecoder {
         return ret;
     }
 
-    _fillRect(x, y, width, height, sock, display, depth) {
+    protected _fillRect(x: number, y: number, width: number, height: number,
+                        sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         if (sock.rQwait("TIGHT", 3)) {
             return false;
         }
 
-        let pixel = sock.rQshiftBytes(3);
+        let pixel: Uint8Array = sock.rQshiftBytes(3);
         display.fillRect(x, y, width, height, pixel, false);
 
         return true;
     }
 
-    _jpegRect(x, y, width, height, sock, display, depth) {
+    protected _jpegRect(x: number, y: number, width: number, height: number,
+                        sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         let data = this._readData(sock);
         if (data === null) {
             return false;
@@ -94,11 +106,13 @@ export default class TightDecoder {
         return true;
     }
 
-    _pngRect(x, y, width, height, sock, display, depth) {
+    protected _pngRect(x: number, y: number, width: number, height: number,
+                       sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         throw new Error("PNG received in standard Tight rect");
     }
 
-    _basicRect(ctl, x, y, width, height, sock, display, depth) {
+    protected _basicRect(ctl: number, x: number, y: number, width: number, height: number,
+                         sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         if (this._filter === null) {
             if (ctl & 0x4) {
                 if (sock.rQwait("TIGHT", 1)) {
@@ -112,9 +126,9 @@ export default class TightDecoder {
             }
         }
 
-        let streamId = ctl & 0x3;
+        let streamId: number = ctl & 0x3;
 
-        let ret;
+        let ret: boolean;
 
         switch (this._filter) {
             case 0: // CopyFilter
@@ -141,9 +155,10 @@ export default class TightDecoder {
         return ret;
     }
 
-    _copyFilter(streamId, x, y, width, height, sock, display, depth) {
-        const uncompressedSize = width * height * 3;
-        let data;
+    private _copyFilter(streamId: number, x: number, y: number, width: number, height: number,
+                        sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
+        const uncompressedSize: number = width * height * 3;
+        let data: Uint8Array;
 
         if (uncompressedSize === 0) {
             return true;
@@ -156,17 +171,17 @@ export default class TightDecoder {
 
             data = sock.rQshiftBytes(uncompressedSize);
         } else {
-            data = this._readData(sock);
-            if (data === null) {
+            const compressedData = this._readData(sock);
+            if (compressedData === null) {
                 return false;
             }
 
-            this._zlibs[streamId].setInput(data);
+            this._zlibs[streamId].setInput(compressedData);
             data = this._zlibs[streamId].inflate(uncompressedSize);
             this._zlibs[streamId].setInput(null);
         }
 
-        let rgbx = new Uint8Array(width * height * 4);
+        let rgbx: Uint8Array = new Uint8Array(width * height * 4);
         for (let i = 0, j = 0; i < width * height * 4; i += 4, j += 3) {
             rgbx[i]     = data[j];
             rgbx[i + 1] = data[j + 1];
@@ -179,14 +194,15 @@ export default class TightDecoder {
         return true;
     }
 
-    _paletteFilter(streamId, x, y, width, height, sock, display, depth) {
+    private _paletteFilter(streamId: number, x: number, y: number, width: number, height: number,
+                           sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         if (this._numColors === 0) {
             if (sock.rQwait("TIGHT palette", 1)) {
                 return false;
             }
 
-            const numColors = sock.rQpeek8() + 1;
-            const paletteSize = numColors * 3;
+            const numColors: number = sock.rQpeek8() + 1;
+            const paletteSize: number = numColors * 3;
 
             if (sock.rQwait("TIGHT palette", 1 + paletteSize)) {
                 return false;
@@ -198,11 +214,11 @@ export default class TightDecoder {
             sock.rQshiftTo(this._palette, paletteSize);
         }
 
-        const bpp = (this._numColors <= 2) ? 1 : 8;
-        const rowSize = Math.floor((width * bpp + 7) / 8);
-        const uncompressedSize = rowSize * height;
+        const bpp: number = (this._numColors <= 2) ? 1 : 8;
+        const rowSize: number = Math.floor((width * bpp + 7) / 8);
+        const uncompressedSize: number = rowSize * height;
 
-        let data;
+        let data: Uint8Array;
 
         if (uncompressedSize === 0) {
             return true;
@@ -215,12 +231,12 @@ export default class TightDecoder {
 
             data = sock.rQshiftBytes(uncompressedSize);
         } else {
-            data = this._readData(sock);
-            if (data === null) {
+            const compressedData = this._readData(sock);
+            if (compressedData === null) {
                 return false;
             }
 
-            this._zlibs[streamId].setInput(data);
+            this._zlibs[streamId].setInput(compressedData);
             data = this._zlibs[streamId].inflate(uncompressedSize);
             this._zlibs[streamId].setInput(null);
         }
@@ -237,15 +253,16 @@ export default class TightDecoder {
         return true;
     }
 
-    _monoRect(x, y, width, height, data, palette, display) {
+    private _monoRect(x: number, y: number, width: number, height: number,
+                      data: Uint8Array, palette: Uint8Array, display: DecoderDisplay): void {
         // Convert indexed (palette based) image data to RGB
         // TODO: reduce number of calculations inside loop
-        const dest = this._getScratchBuffer(width * height * 4);
-        const w = Math.floor((width + 7) / 8);
-        const w1 = Math.floor(width / 8);
+        const dest: Uint8Array = this._getScratchBuffer(width * height * 4);
+        const w: number = Math.floor((width + 7) / 8);
+        const w1: number = Math.floor(width / 8);
 
         for (let y = 0; y < height; y++) {
-            let dp, sp, x;
+            let dp: number, sp: number, x: number;
             for (x = 0; x < w1; x++) {
                 for (let b = 7; b >= 0; b--) {
                     dp = (y * width + x * 8 + 7 - b) * 4;
@@ -270,12 +287,13 @@ export default class TightDecoder {
         display.blitImage(x, y, width, height, dest, 0, false);
     }
 
-    _paletteRect(x, y, width, height, data, palette, display) {
+    private _paletteRect(x: number, y: number, width: number, height: number,
+                         data: Uint8Array, palette: Uint8Array, display: DecoderDisplay): void {
         // Convert indexed (palette based) image data to RGB
-        const dest = this._getScratchBuffer(width * height * 4);
-        const total = width * height * 4;
+        const dest: Uint8Array = this._getScratchBuffer(width * height * 4);
+        const total: number = width * height * 4;
         for (let i = 0, j = 0; i < total; i += 4, j++) {
-            const sp = data[j] * 3;
+            const sp: number = data[j] * 3;
             dest[i]     = palette[sp];
             dest[i + 1] = palette[sp + 1];
             dest[i + 2] = palette[sp + 2];
@@ -285,10 +303,11 @@ export default class TightDecoder {
         display.blitImage(x, y, width, height, dest, 0, false);
     }
 
-    _gradientFilter(streamId, x, y, width, height, sock, display, depth) {
+    private _gradientFilter(streamId: number, x: number, y: number, width: number, height: number,
+                            sock: DecoderSock, display: DecoderDisplay, depth: number): boolean {
         // assume the TPIXEL is 3 bytes long
-        const uncompressedSize = width * height * 3;
-        let data;
+        const uncompressedSize: number = width * height * 3;
+        let data: Uint8Array;
 
         if (uncompressedSize === 0) {
             return true;
@@ -301,46 +320,46 @@ export default class TightDecoder {
 
             data = sock.rQshiftBytes(uncompressedSize);
         } else {
-            data = this._readData(sock);
-            if (data === null) {
+            const compressedData = this._readData(sock);
+            if (compressedData === null) {
                 return false;
             }
 
-            this._zlibs[streamId].setInput(data);
+            this._zlibs[streamId].setInput(compressedData);
             data = this._zlibs[streamId].inflate(uncompressedSize);
             this._zlibs[streamId].setInput(null);
         }
 
-        let rgbx = new Uint8Array(4 * width * height);
+        let rgbx: Uint8Array = new Uint8Array(4 * width * height);
 
-        let rgbxIndex = 0, dataIndex = 0;
-        let left = new Uint8Array(3);
+        let rgbxIndex: number = 0, dataIndex: number = 0;
+        let left: Uint8Array = new Uint8Array(3);
         for (let x = 0; x < width; x++) {
             for (let c = 0; c < 3; c++) {
-                const prediction = left[c];
-                const value = data[dataIndex++] + prediction;
+                const prediction: number = left[c];
+                const value: number = data[dataIndex++] + prediction;
                 rgbx[rgbxIndex++] = value;
                 left[c] = value;
             }
             rgbx[rgbxIndex++] = 255;
         }
 
-        let upperIndex = 0;
-        let upper = new Uint8Array(3),
-            upperleft = new Uint8Array(3);
+        let upperIndex: number = 0;
+        let upper: Uint8Array = new Uint8Array(3),
+            upperleft: Uint8Array = new Uint8Array(3);
         for (let y = 1; y < height; y++) {
             left.fill(0);
             upperleft.fill(0);
             for (let x = 0; x < width; x++) {
                 for (let c = 0; c < 3; c++) {
                     upper[c] = rgbx[upperIndex++];
-                    let prediction = left[c] + upper[c] - upperleft[c];
+                    let prediction: number = left[c] + upper[c] - upperleft[c];
                     if (prediction < 0) {
                         prediction = 0;
                     } else if (prediction > 255) {
                         prediction = 255;
                     }
-                    const value = data[dataIndex++] + prediction;
+                    const value: number = data[dataIndex++] + prediction;
                     rgbx[rgbxIndex++] = value;
                     upperleft[c] = upper[c];
                     left[c] = value;
@@ -355,13 +374,13 @@ export default class TightDecoder {
         return true;
     }
 
-    _readData(sock) {
+    protected _readData(sock: DecoderSock): Uint8Array | null {
         if (this._len === 0) {
             if (sock.rQwait("TIGHT", 3)) {
                 return null;
             }
 
-            let byte;
+            let byte: number;
 
             byte = sock.rQshift8();
             this._len = byte & 0x7f;
@@ -379,13 +398,13 @@ export default class TightDecoder {
             return null;
         }
 
-        let data = sock.rQshiftBytes(this._len, false);
+        let data: Uint8Array = sock.rQshiftBytes(this._len, false);
         this._len = 0;
 
         return data;
     }
 
-    _getScratchBuffer(size) {
+    private _getScratchBuffer(size: number): Uint8Array {
         if (!this._scratchBuffer || (this._scratchBuffer.length < size)) {
             this._scratchBuffer = new Uint8Array(size);
         }
