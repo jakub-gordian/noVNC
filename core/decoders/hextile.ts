@@ -86,7 +86,8 @@ export default class HextileDecoder {
                         return false;
                     }
 
-                    let subrects: number = sock.rQpeekBytes(bytes).at(-1)!;
+                    const peekData = sock.rQpeekBytes(bytes);
+                    let subrects: number = peekData[peekData.length - 1]!;
                     if (subencoding & 0x10) {  // SubrectsColoured
                         bytes += subrects * (4 + 2);
                     } else {
@@ -162,9 +163,9 @@ export default class HextileDecoder {
         this._tileW = width;
         this._tileH = height;
 
-        const red: number = color[0];
-        const green: number = color[1];
-        const blue: number = color[2];
+        const red: number = color[0]!;
+        const green: number = color[1]!;
+        const blue: number = color[2]!;
 
         const data: Uint8Array = this._tileBuffer;
         for (let i = 0; i < width * height * 4; i += 4) {
@@ -177,9 +178,9 @@ export default class HextileDecoder {
 
     // update sub-rectangle of the current tile
     private _subTile(x: number, y: number, w: number, h: number, color: Uint8Array): void {
-        const red: number = color[0];
-        const green: number = color[1];
-        const blue: number = color[2];
+        const red: number = color[0]!;
+        const green: number = color[1]!;
+        const blue: number = color[2]!;
         const xend: number = x + w;
         const yend: number = y + h;
 

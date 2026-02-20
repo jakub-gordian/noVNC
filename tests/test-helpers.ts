@@ -20,7 +20,7 @@ expect.extend({
         let same = true;
         let firstDiffIdx = -1;
         for (let i = 0; i < data.length; i++) {
-            if (!comparator(data[i], targetData[i])) {
+            if (!comparator(data[i]!, targetData[i]!)) {
                 same = false;
                 firstDiffIdx = i;
                 break;
@@ -35,9 +35,9 @@ expect.extend({
                 }
                 return `Expected display to match target data` +
                     ` (first diff at byte ${firstDiffIdx}:` +
-                    ` got ${data[firstDiffIdx]},` +
-                    ` expected ${targetData[firstDiffIdx]},` +
-                    ` diff=${Math.abs(data[firstDiffIdx] - targetData[firstDiffIdx])})`;
+                    ` got ${data[firstDiffIdx]!},` +
+                    ` expected ${targetData[firstDiffIdx]!},` +
+                    ` diff=${Math.abs(data[firstDiffIdx]! - targetData[firstDiffIdx]!)})`;
             },
         };
     },

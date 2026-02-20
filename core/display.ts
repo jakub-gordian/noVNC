@@ -419,7 +419,7 @@ export default class Display {
         } else {
             // For Virtualization server, swap R and B channels
             if (this._isVirtualizationServer) {
-                color = [color[2], color[1], color[0]];
+                color = [color[2]!, color[1]!, color[0]!];
             }
             this._setFillColor(color);
             this._drawCtx.fillRect(x, y, width, height);
@@ -523,10 +523,10 @@ export default class Display {
                 for (let i = 0; i < width * height; i++) {
                     const idx = i * 4 + offset;
                     // Copy with R and B swapped
-                    tempArr[i * 4] = arr[idx + 2];     // R <- B
-                    tempArr[i * 4 + 1] = arr[idx + 1]; // G unchanged
-                    tempArr[i * 4 + 2] = arr[idx];     // B <- R
-                    tempArr[i * 4 + 3] = arr[idx + 3]; // A unchanged
+                    tempArr[i * 4] = arr[idx + 2]!;     // R <- B
+                    tempArr[i * 4 + 1] = arr[idx + 1]!; // G unchanged
+                    tempArr[i * 4 + 2] = arr[idx]!;     // B <- R
+                    tempArr[i * 4 + 3] = arr[idx + 3]!; // A unchanged
                 }
 
                 // Log sample after swap for first line
@@ -563,10 +563,10 @@ export default class Display {
 
         if (args.length <= 4) {
             const [x, y] = args;
-            this._damage(x, y, img.width, img.height);
+            this._damage(x!, y!, img.width, img.height);
         } else {
             const [,, sw, sh, dx, dy] = args;
-            this._damage(dx, dy, sw, sh);
+            this._damage(dx!, dy!, sw!, sh!);
         }
     }
 
@@ -613,7 +613,7 @@ export default class Display {
     }
 
     _setFillColor(color: Uint8Array | number[]): void {
-        const newStyle = 'rgb(' + color[0] + ',' + color[1] + ',' + color[2] + ')';
+        const newStyle = 'rgb(' + color[0]! + ',' + color[1]! + ',' + color[2]! + ')';
         if (newStyle !== this._prevDrawStyle) {
             this._drawCtx.fillStyle = newStyle;
             this._prevDrawStyle = newStyle;
@@ -639,7 +639,7 @@ export default class Display {
     _scanRenderQ(): void {
         let ready = true;
         while (ready && this._renderQ.length > 0) {
-            const a = this._renderQ[0];
+            const a = this._renderQ[0]!;
             switch (a.type) {
                 case 'flip':
                     this.flip(true);

@@ -23,7 +23,7 @@ declare global {
 
 export function getPointerEvent(e: MouseEvent | TouchEvent): MouseEvent | Touch {
     if ('changedTouches' in e) {
-        return e.changedTouches[0] || e.touches[0];
+        return e.changedTouches[0]! || e.touches[0]!;
     }
     return e;
 }

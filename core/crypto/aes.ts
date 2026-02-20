@@ -73,15 +73,15 @@ export class AESEAXCipher {
     async _initCMAC(): Promise<void> {
         const k1 = await this._encryptBlock(this._zeroBlock);
         const k2 = new Uint8Array(16);
-        const v = k1[0] >>> 6;
+        const v = k1[0]! >>> 6;
         for (let i = 0; i < 15; i++) {
-            k2[i] = (k1[i + 1] >> 6) | (k1[i] << 2);
-            k1[i] = (k1[i + 1] >> 7) | (k1[i] << 1);
+            k2[i] = (k1[i + 1]! >> 6) | (k1[i]! << 2);
+            k1[i] = (k1[i + 1]! >> 7) | (k1[i]! << 1);
         }
         const lut = [0x0, 0x87, 0x0e, 0x89];
-        k2[14] ^= v >>> 1;
-        k2[15] = (k1[15] << 2) ^ lut[v];
-        k1[15] = (k1[15] << 1) ^ lut[v >> 1];
+        k2[14]! ^= v >>> 1;
+        k2[15] = (k1[15]! << 2) ^ lut[v]!;
+        k1[15] = (k1[15]! << 1) ^ lut[v >> 1]!;
         this._k1 = k1;
         this._k2 = k2;
     }
@@ -116,12 +116,12 @@ export class AESEAXCipher {
         cbcData.set(data, 16);
         if (r === 0) {
             for (let i = 0; i < 16; i++) {
-                cbcData[n * 16 + i] ^= this._k1[i];
+                cbcData[n * 16 + i]! ^= this._k1[i]!;
             }
         } else {
             cbcData[(n + 1) * 16 + r] = 0x80;
             for (let i = 0; i < 16; i++) {
-                cbcData[(n + 1) * 16 + i] ^= this._k2[i];
+                cbcData[(n + 1) * 16 + i]! ^= this._k2[i]!;
             }
         }
         let cbcEncrypted = new Uint8Array(await window.crypto.subtle.encrypt({
@@ -156,7 +156,7 @@ export class AESEAXCipher {
         const adCMAC = await this._computeCMAC(ad, this._prefixBlock1);
         const mac = await this._computeCMAC(encrypted, this._prefixBlock2);
         for (let i = 0; i < 16; i++) {
-            mac[i] ^= nCMAC[i] ^ adCMAC[i];
+            mac[i]! ^= nCMAC[i]! ^ adCMAC[i]!;
         }
         const res = new Uint8Array(16 + encrypted.length);
         res.set(encrypted);
@@ -173,7 +173,7 @@ export class AESEAXCipher {
         const adCMAC = await this._computeCMAC(ad, this._prefixBlock1);
         const computedMac = await this._computeCMAC(encrypted, this._prefixBlock2);
         for (let i = 0; i < 16; i++) {
-            computedMac[i] ^= nCMAC[i] ^ adCMAC[i];
+            computedMac[i]! ^= nCMAC[i]! ^ adCMAC[i]!;
         }
         if (computedMac.length !== mac.length) {
             return null;

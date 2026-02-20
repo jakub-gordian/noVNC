@@ -27,7 +27,7 @@ describe('Display/Canvas helper', function () {
     function makeImagePng(inputData: Uint8ClampedArray, width: number, height: number) {
         const canvas = makeImageCanvas(inputData, width, height);
         const url = canvas.toDataURL();
-        const data = url.split(",")[1];
+        const data = url.split(",")[1]!;
         return Base64.decode(data);
     }
 
@@ -48,7 +48,7 @@ describe('Display/Canvas helper', function () {
             display.flip();
 
             const expected = new Uint8Array(16);
-            for (let i = 0; i < 8; i++) { expected[i] = basicData[i]; }
+            for (let i = 0; i < 8; i++) { expected[i] = basicData[i]!; }
             for (let i = 8; i < 16; i++) { expected[i] = 0; }
             expect(display).toHaveDisplayed(expected);
         });

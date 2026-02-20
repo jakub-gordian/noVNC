@@ -90,9 +90,9 @@ describe('Hextile decoder', function () {
         let data: number[] = [];
         data.push(0x01); // raw
         for (let i = 0; i < targetData.length; i += 4) {
-            data.push(targetData[i]);
-            data.push(targetData[i + 1]);
-            data.push(targetData[i + 2]);
+            data.push(targetData[i]!);
+            data.push(targetData[i + 1]!);
+            data.push(targetData[i + 2]!);
             // Last byte zero to test correct alpha handling
             data.push(0);
         }

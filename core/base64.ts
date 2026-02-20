@@ -19,24 +19,24 @@ export default {
         // Convert every three bytes to 4 ascii characters.
 
         for (let i = 0; i < (length - 2); i += 3) {
-            result += this.toBase64Table[data[i] >> 2];
-            result += this.toBase64Table[((data[i] & 0x03) << 4) + (data[i + 1] >> 4)];
-            result += this.toBase64Table[((data[i + 1] & 0x0f) << 2) + (data[i + 2] >> 6)];
-            result += this.toBase64Table[data[i + 2] & 0x3f];
+            result += this.toBase64Table[data[i]! >> 2]!;
+            result += this.toBase64Table[((data[i]! & 0x03) << 4) + (data[i + 1]! >> 4)]!;
+            result += this.toBase64Table[((data[i + 1]! & 0x0f) << 2) + (data[i + 2]! >> 6)]!;
+            result += this.toBase64Table[data[i + 2]! & 0x3f]!;
         }
 
         // Convert the remaining 1 or 2 bytes, pad out to 4 characters.
         const j = length - lengthpad;
         if (lengthpad === 2) {
-            result += this.toBase64Table[data[j] >> 2];
-            result += this.toBase64Table[((data[j] & 0x03) << 4) + (data[j + 1] >> 4)];
-            result += this.toBase64Table[(data[j + 1] & 0x0f) << 2];
-            result += this.toBase64Table[64];
+            result += this.toBase64Table[data[j]! >> 2]!;
+            result += this.toBase64Table[((data[j]! & 0x03) << 4) + (data[j + 1]! >> 4)]!;
+            result += this.toBase64Table[(data[j + 1]! & 0x0f) << 2]!;
+            result += this.toBase64Table[64]!;
         } else if (lengthpad === 1) {
-            result += this.toBase64Table[data[j] >> 2];
-            result += this.toBase64Table[(data[j] & 0x03) << 4];
-            result += this.toBase64Table[64];
-            result += this.toBase64Table[64];
+            result += this.toBase64Table[data[j]! >> 2]!;
+            result += this.toBase64Table[(data[j]! & 0x03) << 4]!;
+            result += this.toBase64Table[64]!;
+            result += this.toBase64Table[64]!;
         }
 
         return result;
@@ -69,7 +69,7 @@ export default {
         let leftbits = 0; // number of bits decoded, but yet to be appended
         let leftdata = 0; // bits decoded, but yet to be appended
         for (let idx = 0, i = offset; i < data.length; i++) {
-            const c = this.toBinaryTable[data.charCodeAt(i) & 0x7f];
+            const c = this.toBinaryTable[data.charCodeAt(i) & 0x7f]!;
             const padding = (data.charAt(i) === this.base64Pad);
             // Skip illegal characters and whitespace
             if (c === -1) {

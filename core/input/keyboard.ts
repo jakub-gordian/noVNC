@@ -129,9 +129,9 @@ export default class Keyboard {
                 //        even when AltGr is already down. Some
                 //        browsers detect this for us though and set the
                 //        key to "AltGraph".
-                keysym = KeyTable.XK_ISO_Level3_Shift;
+                keysym = KeyTable.XK_ISO_Level3_Shift!;
             } else {
-                this._sendKeyEvent(KeyTable.XK_Control_L, "ControlLeft", true, numlock, capslock);
+                this._sendKeyEvent(KeyTable.XK_Control_L!, "ControlLeft", true, numlock, capslock);
             }
         }
 
@@ -156,17 +156,17 @@ export default class Keyboard {
         // possibly others).
         if (browser.isMac() || browser.isIOS()) {
             switch (keysym) {
-                case KeyTable.XK_Super_L:
-                    keysym = KeyTable.XK_Alt_L;
+                case KeyTable.XK_Super_L!:
+                    keysym = KeyTable.XK_Alt_L!;
                     break;
-                case KeyTable.XK_Super_R:
-                    keysym = KeyTable.XK_Super_L;
+                case KeyTable.XK_Super_R!:
+                    keysym = KeyTable.XK_Super_L!;
                     break;
-                case KeyTable.XK_Alt_L:
-                    keysym = KeyTable.XK_Mode_switch;
+                case KeyTable.XK_Alt_L!:
+                    keysym = KeyTable.XK_Mode_switch!;
                     break;
-                case KeyTable.XK_Alt_R:
-                    keysym = KeyTable.XK_ISO_Level3_Shift;
+                case KeyTable.XK_Alt_R!:
+                    keysym = KeyTable.XK_ISO_Level3_Shift!;
                     break;
             }
         }
@@ -174,7 +174,7 @@ export default class Keyboard {
         // Is this key already pressed? If so, then we must use the
         // same keysym or we'll confuse the server
         if (code in this._keyDownList) {
-            keysym = this._keyDownList[code];
+            keysym = this._keyDownList[code]!;
         }
 
         // macOS doesn't send proper key releases if a key is pressed
@@ -192,19 +192,19 @@ export default class Keyboard {
         // which toggles on each press, but not on release. So pretend
         // it was a quick press and release of the button.
         if ((browser.isMac() || browser.isIOS()) && (code === 'CapsLock')) {
-            this._sendKeyEvent(KeyTable.XK_Caps_Lock, 'CapsLock', true, numlock, capslock);
-            this._sendKeyEvent(KeyTable.XK_Caps_Lock, 'CapsLock', false, numlock, capslock);
+            this._sendKeyEvent(KeyTable.XK_Caps_Lock!, 'CapsLock', true, numlock, capslock);
+            this._sendKeyEvent(KeyTable.XK_Caps_Lock!, 'CapsLock', false, numlock, capslock);
             stopEvent(e);
             return;
         }
 
         // Windows doesn't send proper key releases for a bunch of
         // Japanese IM keys so we have to fake the release right away
-        const jpBadKeys = [ KeyTable.XK_Zenkaku_Hankaku,
-                            KeyTable.XK_Eisu_toggle,
-                            KeyTable.XK_Katakana,
-                            KeyTable.XK_Hiragana,
-                            KeyTable.XK_Romaji ];
+        const jpBadKeys = [ KeyTable.XK_Zenkaku_Hankaku!,
+                            KeyTable.XK_Eisu_toggle!,
+                            KeyTable.XK_Katakana!,
+                            KeyTable.XK_Hiragana!,
+                            KeyTable.XK_Romaji! ];
         if (browser.isWindows() && keysym !== null && jpBadKeys.includes(keysym)) {
             this._sendKeyEvent(keysym, code, true, numlock, capslock);
             this._sendKeyEvent(keysym, code, false, numlock, capslock);
@@ -237,12 +237,12 @@ export default class Keyboard {
 
         // See comment in _handleKeyDown()
         if ((browser.isMac() || browser.isIOS()) && (code === 'CapsLock')) {
-            this._sendKeyEvent(KeyTable.XK_Caps_Lock, 'CapsLock', true);
-            this._sendKeyEvent(KeyTable.XK_Caps_Lock, 'CapsLock', false);
+            this._sendKeyEvent(KeyTable.XK_Caps_Lock!, 'CapsLock', true);
+            this._sendKeyEvent(KeyTable.XK_Caps_Lock!, 'CapsLock', false);
             return;
         }
 
-        this._sendKeyEvent(this._keyDownList[code], code, false);
+        this._sendKeyEvent(this._keyDownList[code]!, code, false);
 
         // Windows has a rather nasty bug where it won't send key
         // release events for a Shift button if the other Shift is still
@@ -250,11 +250,11 @@ export default class Keyboard {
         if (browser.isWindows() && ((code === 'ShiftLeft') ||
                                     (code === 'ShiftRight'))) {
             if ('ShiftRight' in this._keyDownList) {
-                this._sendKeyEvent(this._keyDownList['ShiftRight'],
+                this._sendKeyEvent(this._keyDownList['ShiftRight']!,
                                    'ShiftRight', false);
             }
             if ('ShiftLeft' in this._keyDownList) {
-                this._sendKeyEvent(this._keyDownList['ShiftLeft'],
+                this._sendKeyEvent(this._keyDownList['ShiftLeft']!,
                                    'ShiftLeft', false);
             }
         }
@@ -264,7 +264,7 @@ export default class Keyboard {
         if (this._altGrArmed) {
             this._altGrArmed = false;
             clearTimeout(this._altGrTimeout);
-            this._sendKeyEvent(KeyTable.XK_Control_L, "ControlLeft", true);
+            this._sendKeyEvent(KeyTable.XK_Control_L!, "ControlLeft", true);
         }
     }
 
@@ -275,7 +275,7 @@ export default class Keyboard {
         this._interruptAltGrSequence();
 
         for (let code in this._keyDownList) {
-            this._sendKeyEvent(this._keyDownList[code], code, false);
+            this._sendKeyEvent(this._keyDownList[code]!, code, false);
         }
         Log.Debug("<< Keyboard.allKeysUp");
     }

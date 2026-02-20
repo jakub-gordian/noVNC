@@ -137,7 +137,7 @@ export default class GestureHandler {
         if (!fn) return;
 
         for (let i = 0; i < e.changedTouches.length; i++) {
-            let touch = e.changedTouches[i];
+            let touch = e.changedTouches[i]!;
             fn.call(this, touch.identifier, touch.clientX, touch.clientY);
         }
     }
@@ -153,7 +153,7 @@ export default class GestureHandler {
         // Did it take too long between touches that we should no longer
         // consider this a single gesture?
         if ((this._tracked.length > 0) &&
-            ((Date.now() - this._tracked[0].started) > GH_MULTITOUCH_TIMEOUT)) {
+            ((Date.now() - this._tracked[0]!.started) > GH_MULTITOUCH_TIMEOUT)) {
             this._state = GH_NOGESTURE;
             this._ignored.push(id);
             return;
@@ -362,8 +362,8 @@ export default class GestureHandler {
 
         // Ignore any remaining touches until they are ended
         for (let i = 0; i < this._tracked.length; i++) {
-            if (this._tracked[i].active) {
-                this._ignored.push(this._tracked[i].id);
+            if (this._tracked[i]!.active) {
+                this._ignored.push(this._tracked[i]!.id);
             }
         }
         this._tracked = [];
@@ -552,10 +552,10 @@ export default class GestureHandler {
         let fx = 0, fy = 0, lx = 0, ly = 0;
 
         for (let i = 0; i < this._tracked.length; i++) {
-            fx += this._tracked[i].firstX;
-            fy += this._tracked[i].firstY;
-            lx += this._tracked[i].lastX;
-            ly += this._tracked[i].lastY;
+            fx += this._tracked[i]!.firstX;
+            fy += this._tracked[i]!.firstY;
+            lx += this._tracked[i]!.lastX;
+            ly += this._tracked[i]!.lastY;
         }
 
         return { first: { x: fx / size,
@@ -574,8 +574,8 @@ export default class GestureHandler {
         let size = this._tracked.length;
 
         for (let i = 0; i < this._tracked.length; i++) {
-            totalH += this._tracked[i].lastX - this._tracked[i].firstX;
-            totalV += this._tracked[i].lastY - this._tracked[i].firstY;
+            totalH += this._tracked[i]!.lastX - this._tracked[i]!.firstX;
+            totalV += this._tracked[i]!.lastY - this._tracked[i]!.firstY;
         }
 
         return { x: totalH / size,
@@ -589,8 +589,8 @@ export default class GestureHandler {
 
         // Distance between the first and last tracked touches
 
-        let first = this._tracked[0];
-        let last = this._tracked[this._tracked.length - 1];
+        let first = this._tracked[0]!;
+        let last = this._tracked[this._tracked.length - 1]!;
 
         let fdx = Math.abs(last.firstX - first.firstX);
         let fdy = Math.abs(last.firstY - first.firstY);

@@ -57,13 +57,13 @@ export class H264Parser {
     }
 
     private _parseSps(index: number): void {
-        this.profileIdc = this._data[index];
-        this.constraintSet = this._data[index + 1];
-        this.levelIdc = this._data[index + 2];
+        this.profileIdc = this._data[index]!;
+        this.constraintSet = this._data[index + 1]!;
+        this.levelIdc = this._data[index + 2]!;
     }
 
     private _parseNalUnit(index: number): NalUnitInfo {
-        const firstByte: number = this._data[index];
+        const firstByte: number = this._data[index]!;
         if (firstByte & 0x80) {
             throw new Error('H264 parsing sanity check failed, forbidden zero bit is set');
         }

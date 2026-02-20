@@ -35,7 +35,7 @@ export default class FakeWebSocket {
         if (!protocols || typeof protocols === 'string') {
             this.protocol = protocols as string;
         } else {
-            this.protocol = protocols[0];
+            this.protocol = protocols[0]!;
         }
 
         this._sendQueue = new Uint8Array(20000);

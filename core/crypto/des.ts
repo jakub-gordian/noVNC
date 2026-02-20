@@ -140,7 +140,7 @@ class DES {
         for (let j = 0, l = 56; j < 56; ++j, l -= 8) {
             l += l < -5 ? 65 : l < -3 ? 31 : l < -1 ? 63 : l === 27 ? 35 : 0; // PC1
             const m = l & 0x7;
-            pc1m[j] = ((password[l >>> 3] & (1<<m)) !== 0) ? 1: 0;
+            pc1m[j] = ((password[l >>> 3]! & (1<<m)) !== 0) ? 1: 0;
         }
 
         for (let i = 0; i < 16; ++i) {
@@ -149,15 +149,15 @@ class DES {
             kn[m] = kn[n] = 0;
             for (let o = 28; o < 59; o += 28) {
                 for (let j = o - 28; j < o; ++j) {
-                    const l = j + totrot[i];
-                    pcr[j] = l < o ? pc1m[l] : pc1m[l - 28];
+                    const l = j + totrot[i]!;
+                    pcr[j] = l < o ? pc1m[l]! : pc1m[l - 28]!;
                 }
             }
             for (let j = 0; j < 24; ++j) {
-                if (pcr[PC2[j]] !== 0) {
+                if (pcr[PC2[j]!] !== 0) {
                     kn[m] |= 1 << (23 - j);
                 }
-                if (pcr[PC2[j + 24]] !== 0) {
+                if (pcr[PC2[j + 24]!] !== 0) {
                     kn[n] |= 1 << (23 - j);
                 }
             }
@@ -165,17 +165,17 @@ class DES {
 
         // cookey
         for (let i = 0, rawi = 0, KnLi = 0; i < 16; ++i) {
-            const raw0 = kn[rawi++];
-            const raw1 = kn[rawi++];
+            const raw0 = kn[rawi++]!;
+            const raw1 = kn[rawi++]!;
             this.keys[KnLi] = (raw0 & 0x00fc0000) << 6;
-            this.keys[KnLi] |= (raw0 & 0x00000fc0) << 10;
-            this.keys[KnLi] |= (raw1 & 0x00fc0000) >>> 10;
-            this.keys[KnLi] |= (raw1 & 0x00000fc0) >>> 6;
+            this.keys[KnLi]! |= (raw0 & 0x00000fc0) << 10;
+            this.keys[KnLi]! |= (raw1 & 0x00fc0000) >>> 10;
+            this.keys[KnLi]! |= (raw1 & 0x00000fc0) >>> 6;
             ++KnLi;
             this.keys[KnLi] = (raw0 & 0x0003f000) << 12;
-            this.keys[KnLi] |= (raw0 & 0x0000003f) << 16;
-            this.keys[KnLi] |= (raw1 & 0x0003f000) >>> 4;
-            this.keys[KnLi] |= (raw1 & 0x0000003f);
+            this.keys[KnLi]! |= (raw0 & 0x0000003f) << 16;
+            this.keys[KnLi]! |= (raw1 & 0x0003f000) >>> 4;
+            this.keys[KnLi]! |= (raw1 & 0x0000003f);
             ++KnLi;
         }
     }
@@ -186,8 +186,8 @@ class DES {
         let i = 0, l, r, x; // left, right, accumulator
 
         // Squash 8 bytes to 2 ints
-        l = b[i++]<<24 | b[i++]<<16 | b[i++]<<8 | b[i++];
-        r = b[i++]<<24 | b[i++]<<16 | b[i++]<<8 | b[i++];
+        l = b[i++]!<<24 | b[i++]!<<16 | b[i++]!<<8 | b[i++]!;
+        r = b[i++]!<<24 | b[i++]!<<16 | b[i++]!<<8 | b[i++]!;
 
         x = ((l >>> 4) ^ r) & 0x0f0f0f0f;
         r ^= x;
@@ -209,28 +209,28 @@ class DES {
 
         for (let i = 0, keysi = 0; i < 8; ++i) {
             x = (r << 28) | (r >>> 4);
-            x ^= this.keys[keysi++];
-            let fval =  SP7[x & 0x3f];
-            fval |= SP5[(x >>> 8) & 0x3f];
-            fval |= SP3[(x >>> 16) & 0x3f];
-            fval |= SP1[(x >>> 24) & 0x3f];
-            x = r ^ this.keys[keysi++];
-            fval |= SP8[x & 0x3f];
-            fval |= SP6[(x >>> 8) & 0x3f];
-            fval |= SP4[(x >>> 16) & 0x3f];
-            fval |= SP2[(x >>> 24) & 0x3f];
+            x ^= this.keys[keysi++]!;
+            let fval =  SP7[x & 0x3f]!;
+            fval |= SP5[(x >>> 8) & 0x3f]!;
+            fval |= SP3[(x >>> 16) & 0x3f]!;
+            fval |= SP1[(x >>> 24) & 0x3f]!;
+            x = r ^ this.keys[keysi++]!;
+            fval |= SP8[x & 0x3f]!;
+            fval |= SP6[(x >>> 8) & 0x3f]!;
+            fval |= SP4[(x >>> 16) & 0x3f]!;
+            fval |= SP2[(x >>> 24) & 0x3f]!;
             l ^= fval;
             x = (l << 28) | (l >>> 4);
-            x ^= this.keys[keysi++];
-            fval =  SP7[x & 0x3f];
-            fval |= SP5[(x >>> 8) & 0x3f];
-            fval |= SP3[(x >>> 16) & 0x3f];
-            fval |= SP1[(x >>> 24) & 0x3f];
-            x = l ^ this.keys[keysi++];
-            fval |= SP8[x & 0x0000003f];
-            fval |= SP6[(x >>> 8) & 0x3f];
-            fval |= SP4[(x >>> 16) & 0x3f];
-            fval |= SP2[(x >>> 24) & 0x3f];
+            x ^= this.keys[keysi++]!;
+            fval =  SP7[x & 0x3f]!;
+            fval |= SP5[(x >>> 8) & 0x3f]!;
+            fval |= SP3[(x >>> 16) & 0x3f]!;
+            fval |= SP1[(x >>> 24) & 0x3f]!;
+            x = l ^ this.keys[keysi++]!;
+            fval |= SP8[x & 0x0000003f]!;
+            fval |= SP6[(x >>> 8) & 0x3f]!;
+            fval |= SP4[(x >>> 16) & 0x3f]!;
+            fval |= SP2[(x >>> 24) & 0x3f]!;
             r ^= fval;
         }
 
@@ -255,8 +255,8 @@ class DES {
         // Spread ints to bytes
         x = [r, l];
         for (i = 0; i < 8; i++) {
-            b[i] = (x[i>>>2] >>> (8 * (3 - (i % 4)))) % 256;
-            if (b[i] < 0) { b[i] += 256; } // unsigned
+            b[i] = (x[i>>>2]! >>> (8 * (3 - (i % 4)))) % 256;
+            if (b[i]! < 0) { b[i]! += 256; } // unsigned
         }
         return b;
     }
@@ -326,7 +326,7 @@ export class DESCBCCipher {
         const n = x.length / 8;
         for (let i = 0; i < n; i++) {
             for (let j = 0; j < 8; j++) {
-                y[j] ^= plaintext[i * 8 + j];
+                y[j]! ^= plaintext[i * 8 + j]!;
             }
             y = this._cipher.enc8(y);
             x.set(y, i * 8);

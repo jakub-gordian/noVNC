@@ -105,7 +105,7 @@ export class RSACipher {
         const ps = new Uint8Array(this._keyBytes - message.length - 3);
         window.crypto.getRandomValues(ps);
         for (let i = 0; i < ps.length; i++) {
-            ps[i] = Math.floor(ps[i] * 254 / 255 + 1);
+            ps[i] = Math.floor(ps[i]! * 254 / 255 + 1);
         }
         const em = new Uint8Array(this._keyBytes);
         em[1] = 0x02;

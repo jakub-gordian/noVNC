@@ -41,7 +41,7 @@ export default class JPEGDecoder {
         let huffmanTables: Uint8Array[] = [];
         let quantTables: Uint8Array[] = [];
         for (let segment of this._segments) {
-            let type: number = segment[1];
+            let type: number = segment[1]!;
             if (type === 0xC4) {
                 // Huffman tables
                 huffmanTables.push(segment);

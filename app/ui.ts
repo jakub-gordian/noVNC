@@ -130,8 +130,8 @@ async function parseRecordingFrames(file: File, onProgress?: (status: string) =>
 
     while (offset + 9 <= data.length) {
         const fromClient = data[offset] === 1;
-        const timestamp = (data[offset + 1] << 24) | (data[offset + 2] << 16) | (data[offset + 3] << 8) | data[offset + 4];
-        const dataLen = (data[offset + 5] << 24) | (data[offset + 6] << 16) | (data[offset + 7] << 8) | data[offset + 8];
+        const timestamp = (data[offset + 1]! << 24) | (data[offset + 2]! << 16) | (data[offset + 3]! << 8) | data[offset + 4]!;
+        const dataLen = (data[offset + 5]! << 24) | (data[offset + 6]! << 16) | (data[offset + 7]! << 8) | data[offset + 8]!;
 
         if (offset + 9 + dataLen > data.length) break;
 
@@ -231,7 +231,7 @@ class RecordingPlayer {
 
         // Skip client frames
         while (this._frameIndex < this._frameLength &&
-               this._frames[this._frameIndex].fromClient) {
+               this._frames[this._frameIndex]!.fromClient) {
             this._frameIndex++;
         }
 
@@ -253,7 +253,7 @@ class RecordingPlayer {
             await rfb._display.flush();
         }
 
-        const frame = this._frames[this._frameIndex];
+        const frame = this._frames[this._frameIndex]!;
 
         // Send frame to RFB via fake websocket
         this._ws!.onmessage({ data: frame.data });
@@ -328,16 +328,16 @@ async function encodeCapturesToMp4(captures: CaptureEntry[], onProgress?: (statu
     let width = 0;
     let height = 0;
     for (let i = validCaptures.length - 1; i >= 0; i--) {
-        if (validCaptures[i].vncWidth && validCaptures[i].vncHeight) {
-            width = validCaptures[i].vncWidth;
-            height = validCaptures[i].vncHeight;
+        if (validCaptures[i]!.vncWidth && validCaptures[i]!.vncHeight) {
+            width = validCaptures[i]!.vncWidth;
+            height = validCaptures[i]!.vncHeight;
             break;
         }
     }
 
     // Fallback to captured image dimensions
     if (width === 0 || height === 0) {
-        const firstBitmap = await dataUrlToImageBitmap(validCaptures[0].dataUrl);
+        const firstBitmap = await dataUrlToImageBitmap(validCaptures[0]!.dataUrl);
         width = firstBitmap.width;
         height = firstBitmap.height;
         firstBitmap.close();
@@ -372,7 +372,7 @@ async function encodeCapturesToMp4(captures: CaptureEntry[], onProgress?: (statu
     frameCtx.clearRect(0, 0, encodedWidth, encodedHeight);
 
     for (let i = 0; i < validCaptures.length; i++) {
-        const cap = validCaptures[i];
+        const cap = validCaptures[i]!;
         try {
             const bitmap = await dataUrlToImageBitmap(cap.dataUrl);
             frameCtx.drawImage(bitmap, 0, 0, encodedWidth, encodedHeight);
@@ -382,7 +382,7 @@ async function encodeCapturesToMp4(captures: CaptureEntry[], onProgress?: (statu
             const imageData = frameCtx.getImageData(0, 0, encodedWidth, encodedHeight);
             let isOpaque = true;
             for (let j = 3; j < imageData.data.length; j += 400) {
-                if (imageData.data[j] < 255) { isOpaque = false; break; }
+                if (imageData.data[j]! < 255) { isOpaque = false; break; }
             }
 
             if (isOpaque) {
@@ -395,14 +395,14 @@ async function encodeCapturesToMp4(captures: CaptureEntry[], onProgress?: (statu
     }
 
     if (firstOpaqueTimestamp === null) {
-        firstOpaqueTimestamp = validCaptures[0].timestamp;
+        firstOpaqueTimestamp = validCaptures[0]!.timestamp;
     }
 
     // Encode at max 24 FPS
     const maxFps = 24;
     const frameIntervalMs = 1000 / maxFps;
     const firstTimestamp = firstOpaqueTimestamp;
-    const lastTimestamp = validCaptures[validCaptures.length - 1].timestamp;
+    const lastTimestamp = validCaptures[validCaptures.length - 1]!.timestamp;
     const totalDurationMs = lastTimestamp - firstTimestamp;
     const totalFrames = Math.ceil(totalDurationMs / frameIntervalMs) + 1;
 
@@ -414,13 +414,13 @@ async function encodeCapturesToMp4(captures: CaptureEntry[], onProgress?: (statu
         // Find last capture in this frame's time window
         let lastCaptureInBucket: CaptureEntry | null = null;
         while (captureIdx < validCaptures.length) {
-            const capTimeMs = validCaptures[captureIdx].timestamp - firstTimestamp;
+            const capTimeMs = validCaptures[captureIdx]!.timestamp - firstTimestamp;
             if (capTimeMs < 0) {
                 captureIdx++;
                 continue;
             }
             if (capTimeMs < frameEndMs) {
-                lastCaptureInBucket = validCaptures[captureIdx];
+                lastCaptureInBucket = validCaptures[captureIdx]!;
                 captureIdx++;
             } else {
                 break;
@@ -429,8 +429,8 @@ async function encodeCapturesToMp4(captures: CaptureEntry[], onProgress?: (statu
 
         if (!lastCaptureInBucket && frameNum > 0) {
             for (let i = captureIdx - 1; i >= 0; i--) {
-                if (validCaptures[i].dataUrl && validCaptures[i].dataUrl.length > 100) {
-                    lastCaptureInBucket = validCaptures[i];
+                if (validCaptures[i]!.dataUrl && validCaptures[i]!.dataUrl.length > 100) {
+                    lastCaptureInBucket = validCaptures[i]!;
                     break;
                 }
             }
@@ -643,7 +643,7 @@ const UI = {
         // Logging selection dropdown
         const llevels = ['error', 'warn', 'info', 'debug'];
         for (let i = 0; i < llevels.length; i += 1) {
-            UI.addOption(document.getElementById('noVNC_setting_logging') as HTMLSelectElement, llevels[i], llevels[i]);
+            UI.addOption(document.getElementById('noVNC_setting_logging') as HTMLSelectElement, llevels[i]!, llevels[i]!);
         }
 
         // Settings with immediate effects
@@ -679,13 +679,13 @@ const UI = {
     setupSettingLabels() {
         const labels = document.getElementsByTagName('label');
         for (let i = 0; i < labels.length; i++) {
-            const htmlFor = labels[i].htmlFor;
+            const htmlFor = labels[i]!.htmlFor;
             if (htmlFor != '') {
                 const elem = document.getElementById(htmlFor) as HTMLElement | null;
-                if (elem) elem.label = labels[i];
+                if (elem) elem.label = labels[i]!;
             } else {
                 // If 'for' isn't set, use the first input element child
-                const children = labels[i].children;
+                const children = labels[i]!.children;
                 for (let j = 0; j < children.length; j++) {
                     if ((children[j] as HTMLInputElement).form !== undefined) {
                         (children[j] as HTMLElement).label = labels[i];
@@ -731,7 +731,7 @@ const UI = {
 
         const exps = document.getElementsByClassName("noVNC_expander");
         for (let i = 0;i < exps.length;i++) {
-            exps[i].addEventListener('click', UI.toggleExpander);
+            exps[i]!.addEventListener('click', UI.toggleExpander);
         }
     },
 
@@ -1306,7 +1306,7 @@ const UI = {
             (ctrl as HTMLInputElement).checked = value;
         } else if ('options' in ctrl && typeof ctrl.options !== 'undefined') {
             for (let i = 0; i < ctrl.options.length; i += 1) {
-                if (ctrl.options[i].value === value) {
+                if (ctrl.options[i]!.value === value) {
                     ctrl.selectedIndex = i;
                     break;
                 }
@@ -1324,7 +1324,7 @@ const UI = {
             val = (ctrl as HTMLInputElement).checked;
         } else if ('options' in ctrl! && typeof (ctrl as HTMLSelectElement).options !== 'undefined') {
             const sel = ctrl as HTMLSelectElement;
-            val = sel.options[sel.selectedIndex].value;
+            val = sel.options[sel.selectedIndex]!.value;
         } else {
             val = ctrl!.value;
         }
@@ -2210,8 +2210,8 @@ const UI = {
             // Try to parse frames from buffer
             while (buffer.length >= 9) {
                 const fromClient = buffer[0] === 1;
-                const timestamp = (buffer[1] << 24) | (buffer[2] << 16) | (buffer[3] << 8) | buffer[4];
-                const dataLen = (buffer[5] << 24) | (buffer[6] << 16) | (buffer[7] << 8) | buffer[8];
+                const timestamp = (buffer[1]! << 24) | (buffer[2]! << 16) | (buffer[3]! << 8) | buffer[4]!;
+                const dataLen = (buffer[5]! << 24) | (buffer[6]! << 16) | (buffer[7]! << 8) | buffer[8]!;
 
                 if (buffer.length < 9 + dataLen) break;
 
@@ -2222,7 +2222,7 @@ const UI = {
                 const prefix = fromClient ? '}' : '{';
                 let binary = '';
                 for (let j = 0; j < data.length; j++) {
-                    binary += String.fromCharCode(data[j]);
+                    binary += String.fromCharCode(data[j]!);
                 }
                 const base64Data = btoa(binary);
                 const frameStr = prefix + timestamp + '{' + base64Data;
@@ -2271,8 +2271,8 @@ const UI = {
         while (true) {
             while (buffer.length >= 9) {
                 const fromClient = buffer[0] === 1;
-                const timestamp = (buffer[1] << 24) | (buffer[2] << 16) | (buffer[3] << 8) | buffer[4];
-                const dataLen = (buffer[5] << 24) | (buffer[6] << 16) | (buffer[7] << 8) | buffer[8];
+                const timestamp = (buffer[1]! << 24) | (buffer[2]! << 16) | (buffer[3]! << 8) | buffer[4]!;
+                const dataLen = (buffer[5]! << 24) | (buffer[6]! << 16) | (buffer[7]! << 8) | buffer[8]!;
 
                 if (buffer.length < 9 + dataLen) break;
 
@@ -2369,8 +2369,8 @@ const UI = {
                         // Binary format: fromClient(1) + timestamp(4) + dataLen(4) + data(dataLen)
                         if (buffer.length >= 9) {
                             const fromClient = buffer[0] === 1;
-                            const timestamp = (buffer[1] << 24) | (buffer[2] << 16) | (buffer[3] << 8) | buffer[4];
-                            const dataLen = (buffer[5] << 24) | (buffer[6] << 16) | (buffer[7] << 8) | buffer[8];
+                            const timestamp = (buffer[1]! << 24) | (buffer[2]! << 16) | (buffer[3]! << 8) | buffer[4]!;
+                            const dataLen = (buffer[5]! << 24) | (buffer[6]! << 16) | (buffer[7]! << 8) | buffer[8]!;
 
                             if (buffer.length >= 9 + dataLen) {
                                 // We have a complete frame
@@ -2381,7 +2381,7 @@ const UI = {
                                 const prefix = fromClient ? '}' : '{';
                                 let binary = '';
                                 for (let j = 0; j < data.length; j++) {
-                                    binary += String.fromCharCode(data[j]);
+                                    binary += String.fromCharCode(data[j]!);
                                 }
                                 const base64Data = btoa(binary);
                                 const frameStr = prefix + timestamp + '{' + base64Data;
@@ -3223,7 +3223,7 @@ const UI = {
 
         // Send the key events
         for (let i = 0; i < backspaces; i++) {
-            UI.rfb!.sendKey(KeyTable.XK_BackSpace, "Backspace");
+            UI.rfb!.sendKey(KeyTable.XK_BackSpace!, "Backspace");
         }
         for (let i = newLen - inputs; i < newLen; i++) {
             UI.rfb!.sendKey(keysyms.lookup(newValue.charCodeAt(i)), "Unidentified");
@@ -3280,20 +3280,20 @@ const UI = {
     },
 
     sendEsc() {
-        UI.sendKey(KeyTable.XK_Escape, "Escape");
+        UI.sendKey(KeyTable.XK_Escape!, "Escape");
     },
 
     sendTab() {
-        UI.sendKey(KeyTable.XK_Tab, "Tab");
+        UI.sendKey(KeyTable.XK_Tab!, "Tab");
     },
 
     toggleCtrl() {
         const btn = document.getElementById('noVNC_toggle_ctrl_button')!;
         if (btn.classList.contains("noVNC_selected")) {
-            UI.sendKey(KeyTable.XK_Control_L, "ControlLeft", false);
+            UI.sendKey(KeyTable.XK_Control_L!, "ControlLeft", false);
             btn.classList.remove("noVNC_selected");
         } else {
-            UI.sendKey(KeyTable.XK_Control_L, "ControlLeft", true);
+            UI.sendKey(KeyTable.XK_Control_L!, "ControlLeft", true);
             btn.classList.add("noVNC_selected");
         }
     },
@@ -3301,10 +3301,10 @@ const UI = {
     toggleWindows() {
         const btn = document.getElementById('noVNC_toggle_windows_button')!;
         if (btn.classList.contains("noVNC_selected")) {
-            UI.sendKey(KeyTable.XK_Super_L, "MetaLeft", false);
+            UI.sendKey(KeyTable.XK_Super_L!, "MetaLeft", false);
             btn.classList.remove("noVNC_selected");
         } else {
-            UI.sendKey(KeyTable.XK_Super_L, "MetaLeft", true);
+            UI.sendKey(KeyTable.XK_Super_L!, "MetaLeft", true);
             btn.classList.add("noVNC_selected");
         }
     },
@@ -3312,10 +3312,10 @@ const UI = {
     toggleAlt() {
         const btn = document.getElementById('noVNC_toggle_alt_button')!;
         if (btn.classList.contains("noVNC_selected")) {
-            UI.sendKey(KeyTable.XK_Alt_L, "AltLeft", false);
+            UI.sendKey(KeyTable.XK_Alt_L!, "AltLeft", false);
             btn.classList.remove("noVNC_selected");
         } else {
-            UI.sendKey(KeyTable.XK_Alt_L, "AltLeft", true);
+            UI.sendKey(KeyTable.XK_Alt_L!, "AltLeft", true);
             btn.classList.add("noVNC_selected");
         }
     },

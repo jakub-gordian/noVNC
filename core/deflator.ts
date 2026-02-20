@@ -72,8 +72,8 @@ export default class Deflator {
             let offset = 0;
 
             for (let i = 0; i < chunks.length; i++) {
-                newData.set(chunks[i], offset);
-                offset += chunks[i].length;
+                newData.set(chunks[i]!, offset);
+                offset += chunks[i]!.length;
             }
 
             outData = newData;

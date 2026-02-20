@@ -37,7 +37,7 @@ export function getKeycode(evt: KeyboardEventLike): string {
     // The de-facto standard is to use Windows Virtual-Key codes
     // in the 'keyCode' field for non-printable characters
     if (evt.keyCode !== undefined && evt.keyCode in vkeys) {
-        let code = vkeys[evt.keyCode];
+        let code = vkeys[evt.keyCode]!;
 
         // macOS has messed up this code for some reason
         if (browser.isMac() && (code === 'ContextMenu')) {
@@ -108,7 +108,7 @@ export function getKey(evt: KeyboardEventLike): string {
     // Try to deduce it based on the physical key
     const code = getKeycode(evt);
     if (code in fixedkeys) {
-        return fixedkeys[code];
+        return fixedkeys[code]!;
     }
 
     // If that failed, then see if we have a printable character
@@ -155,9 +155,9 @@ export function getKeysym(evt: KeyboardEventLike): number | null {
         if (key === 'Meta') {
             let code = getKeycode(evt);
             if (code === 'AltLeft') {
-                return KeyTable.XK_Meta_L;
+                return KeyTable.XK_Meta_L!;
             } else if (code === 'AltRight') {
-                return KeyTable.XK_Meta_R;
+                return KeyTable.XK_Meta_R!;
             }
         }
 
@@ -166,7 +166,7 @@ export function getKeysym(evt: KeyboardEventLike): number | null {
         if (key === 'Clear') {
             let code = getKeycode(evt);
             if (code === 'NumLock') {
-                return KeyTable.XK_Num_Lock;
+                return KeyTable.XK_Num_Lock!;
             }
         }
 
@@ -178,14 +178,14 @@ export function getKeysym(evt: KeyboardEventLike): number | null {
             switch (key) {
                 case 'Zenkaku':
                 case 'Hankaku':
-                    return KeyTable.XK_Zenkaku_Hankaku;
+                    return KeyTable.XK_Zenkaku_Hankaku!;
                 case 'Romaji':
                 case 'KanaMode':
-                    return KeyTable.XK_Romaji;
+                    return KeyTable.XK_Romaji!;
             }
         }
 
-        return DOMKeyTable[key][location];
+        return DOMKeyTable[key]![location]!;
     }
 
     // Now we need to look at the Unicode symbol instead

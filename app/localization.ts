@@ -48,14 +48,14 @@ export class Localizer {
         }
 
         for (let i = 0;i < userLanguages.length;i++) {
-            const userLang = userLanguages[i]
+            const userLang = userLanguages[i]!
                 .toLowerCase()
                 .replace("_", "-")
                 .split("-");
 
             // First pass: perfect match
             for (let j = 0; j < supportedLanguages.length; j++) {
-                const supLang = supportedLanguages[j]
+                const supLang = supportedLanguages[j]!
                     .toLowerCase()
                     .replace("_", "-")
                     .split("-");
@@ -67,7 +67,7 @@ export class Localizer {
                     continue;
                 }
 
-                this.language = supportedLanguages[j];
+                this.language = supportedLanguages[j]!;
                 return;
             }
 
@@ -78,7 +78,7 @@ export class Localizer {
 
             // Third pass pass: other fallback
             for (let j = 0;j < supportedLanguages.length;j++) {
-                const supLang = supportedLanguages[j]
+                const supLang = supportedLanguages[j]!
                     .toLowerCase()
                     .replace("_", "-")
                     .split("-");
@@ -90,7 +90,7 @@ export class Localizer {
                     continue;
                 }
 
-                this.language = supportedLanguages[j];
+                this.language = supportedLanguages[j]!;
                 return;
             }
         }
@@ -124,7 +124,7 @@ export class Localizer {
     get(id: string): string {
         if (typeof this._dictionary !== 'undefined' &&
             this._dictionary[id]) {
-            return this._dictionary[id];
+            return this._dictionary[id]!;
         } else {
             return id;
         }
@@ -199,7 +199,7 @@ export class Localizer {
             }
 
             for (let i = 0; i < elem.childNodes.length; i++) {
-                const node = elem.childNodes[i];
+                const node = elem.childNodes[i]!;
                 if (node.nodeType === node.ELEMENT_NODE) {
                     process(node as Element, enabled);
                 } else if (node.nodeType === node.TEXT_NODE && enabled) {

@@ -50,9 +50,9 @@ export default class RawDecoder {
             if (depth == 8) {
                 const newdata = new Uint8Array(width * 4);
                 for (let i = 0; i < width; i++) {
-                    newdata[i * 4 + 0] = ((data[i] >> 0) & 0x3) * 255 / 3;
-                    newdata[i * 4 + 1] = ((data[i] >> 2) & 0x3) * 255 / 3;
-                    newdata[i * 4 + 2] = ((data[i] >> 4) & 0x3) * 255 / 3;
+                    newdata[i * 4 + 0] = ((data[i]! >> 0) & 0x3) * 255 / 3;
+                    newdata[i * 4 + 1] = ((data[i]! >> 2) & 0x3) * 255 / 3;
+                    newdata[i * 4 + 2] = ((data[i]! >> 4) & 0x3) * 255 / 3;
                     newdata[i * 4 + 3] = 255;
                 }
                 data = newdata;
@@ -73,8 +73,8 @@ export default class RawDecoder {
                 // In bgrMode we need to switch the red and blue bytes
                 for (let i = 0; i < width; i++) {
                     let j = i * 4;
-                    let red = data[j];
-                    data[j] = data[j + 2];
+                    let red = data[j]!;
+                    data[j] = data[j + 2]!;
                     data[j + 2] = red;
                 }
 

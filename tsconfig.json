@@ -14,7 +14,8 @@
         "types": ["bun-types"],
         "allowJs": true,
         "checkJs": false,
-        "allowImportingTsExtensions": true
+        "allowImportingTsExtensions": true,
+        "noUncheckedIndexedAccess": true
     },
     "include": [
         "core/**/*.ts",

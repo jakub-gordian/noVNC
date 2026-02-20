@@ -40,8 +40,8 @@ function _deflator(data: Uint8Array) {
     let offset = 0;
 
     for (let i = 0; i < chunks.length; i++) {
-        outData.set(chunks[i], offset);
-        offset += chunks[i].length;
+        outData.set(chunks[i]!, offset);
+        offset += chunks[i]!.length;
     }
 
     return outData;

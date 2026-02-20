@@ -47,7 +47,7 @@ export default class TightDecoder {
             // Reset streams if the server requests it
             for (let i = 0; i < 4; i++) {
                 if ((this._ctl >> i) & 1) {
-                    this._zlibs[i].reset();
+                    this._zlibs[i]!.reset();
                     Log.Info("Reset zlib stream " + i);
                 }
             }
@@ -176,16 +176,16 @@ export default class TightDecoder {
                 return false;
             }
 
-            this._zlibs[streamId].setInput(compressedData);
-            data = this._zlibs[streamId].inflate(uncompressedSize);
-            this._zlibs[streamId].setInput(null);
+            this._zlibs[streamId]!.setInput(compressedData);
+            data = this._zlibs[streamId]!.inflate(uncompressedSize);
+            this._zlibs[streamId]!.setInput(null);
         }
 
         let rgbx: Uint8Array = new Uint8Array(width * height * 4);
         for (let i = 0, j = 0; i < width * height * 4; i += 4, j += 3) {
-            rgbx[i]     = data[j];
-            rgbx[i + 1] = data[j + 1];
-            rgbx[i + 2] = data[j + 2];
+            rgbx[i]     = data[j]!;
+            rgbx[i + 1] = data[j + 1]!;
+            rgbx[i + 2] = data[j + 2]!;
             rgbx[i + 3] = 255;  // Alpha
         }
 
@@ -236,9 +236,9 @@ export default class TightDecoder {
                 return false;
             }
 
-            this._zlibs[streamId].setInput(compressedData);
-            data = this._zlibs[streamId].inflate(uncompressedSize);
-            this._zlibs[streamId].setInput(null);
+            this._zlibs[streamId]!.setInput(compressedData);
+            data = this._zlibs[streamId]!.inflate(uncompressedSize);
+            this._zlibs[streamId]!.setInput(null);
         }
 
         // Convert indexed (palette based) image data to RGB
@@ -266,20 +266,20 @@ export default class TightDecoder {
             for (x = 0; x < w1; x++) {
                 for (let b = 7; b >= 0; b--) {
                     dp = (y * width + x * 8 + 7 - b) * 4;
-                    sp = (data[y * w + x] >> b & 1) * 3;
-                    dest[dp]     = palette[sp];
-                    dest[dp + 1] = palette[sp + 1];
-                    dest[dp + 2] = palette[sp + 2];
+                    sp = (data[y * w + x]! >> b & 1) * 3;
+                    dest[dp]     = palette[sp]!;
+                    dest[dp + 1] = palette[sp + 1]!;
+                    dest[dp + 2] = palette[sp + 2]!;
                     dest[dp + 3] = 255;
                 }
             }
 
             for (let b = 7; b >= 8 - width % 8; b--) {
                 dp = (y * width + x * 8 + 7 - b) * 4;
-                sp = (data[y * w + x] >> b & 1) * 3;
-                dest[dp]     = palette[sp];
-                dest[dp + 1] = palette[sp + 1];
-                dest[dp + 2] = palette[sp + 2];
+                sp = (data[y * w + x]! >> b & 1) * 3;
+                dest[dp]     = palette[sp]!;
+                dest[dp + 1] = palette[sp + 1]!;
+                dest[dp + 2] = palette[sp + 2]!;
                 dest[dp + 3] = 255;
             }
         }
@@ -293,10 +293,10 @@ export default class TightDecoder {
         const dest: Uint8Array = this._getScratchBuffer(width * height * 4);
         const total: number = width * height * 4;
         for (let i = 0, j = 0; i < total; i += 4, j++) {
-            const sp: number = data[j] * 3;
-            dest[i]     = palette[sp];
-            dest[i + 1] = palette[sp + 1];
-            dest[i + 2] = palette[sp + 2];
+            const sp: number = data[j]! * 3;
+            dest[i]     = palette[sp]!;
+            dest[i + 1] = palette[sp + 1]!;
+            dest[i + 2] = palette[sp + 2]!;
             dest[i + 3] = 255;
         }
 
@@ -325,9 +325,9 @@ export default class TightDecoder {
                 return false;
             }
 
-            this._zlibs[streamId].setInput(compressedData);
-            data = this._zlibs[streamId].inflate(uncompressedSize);
-            this._zlibs[streamId].setInput(null);
+            this._zlibs[streamId]!.setInput(compressedData);
+            data = this._zlibs[streamId]!.inflate(uncompressedSize);
+            this._zlibs[streamId]!.setInput(null);
         }
 
         let rgbx: Uint8Array = new Uint8Array(4 * width * height);
@@ -336,8 +336,8 @@ export default class TightDecoder {
         let left: Uint8Array = new Uint8Array(3);
         for (let x = 0; x < width; x++) {
             for (let c = 0; c < 3; c++) {
-                const prediction: number = left[c];
-                const value: number = data[dataIndex++] + prediction;
+                const prediction: number = left[c]!;
+                const value: number = data[dataIndex++]! + prediction;
                 rgbx[rgbxIndex++] = value;
                 left[c] = value;
             }
@@ -352,16 +352,16 @@ export default class TightDecoder {
             upperleft.fill(0);
             for (let x = 0; x < width; x++) {
                 for (let c = 0; c < 3; c++) {
-                    upper[c] = rgbx[upperIndex++];
-                    let prediction: number = left[c] + upper[c] - upperleft[c];
+                    upper[c] = rgbx[upperIndex++]!;
+                    let prediction: number = left[c]! + upper[c]! - upperleft[c]!;
                     if (prediction < 0) {
                         prediction = 0;
                     } else if (prediction > 255) {
                         prediction = 255;
                     }
-                    const value: number = data[dataIndex++] + prediction;
+                    const value: number = data[dataIndex++]! + prediction;
                     rgbx[rgbxIndex++] = value;
-                    upperleft[c] = upper[c];
+                    upperleft[c] = upper[c]!;
                     left[c] = value;
                 }
                 rgbx[rgbxIndex++] = 255;

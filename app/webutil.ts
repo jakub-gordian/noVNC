@@ -50,7 +50,7 @@ export function getQueryVar(name: string, defVal?: string | null): string | null
     if (typeof defVal === 'undefined') { defVal = null; }
 
     if (match) {
-        return decodeURIComponent(match[1]);
+        return decodeURIComponent(match[1]!);
     }
 
     return defVal;
@@ -64,7 +64,7 @@ export function getHashVar(name: string, defVal?: string | null): string | null 
     if (typeof defVal === 'undefined') { defVal = null; }
 
     if (match) {
-        return decodeURIComponent(match[1]);
+        return decodeURIComponent(match[1]!);
     }
 
     return defVal;
@@ -114,7 +114,7 @@ export function readCookie(name: string, defaultValue?: string): string | null {
     const ca = document.cookie.split(';');
 
     for (let i = 0; i < ca.length; i += 1) {
-        let c = ca[i];
+        let c = ca[i]!;
         while (c.charAt(0) === ' ') {
             c = c.substring(1, c.length);
         }

@@ -3201,11 +3201,11 @@ describe('Remote Frame Buffer protocol client', function () {
 
                         //AND-mask
                         for (let i = 0; i < data.length; i++) {
-                            push8(rect, data[i]);
+                            push8(rect, data[i]!);
                         }
                         //XOR-mask
                         for (let i = 0; i < data.length; i++) {
-                            push8(rect, data[i]);
+                            push8(rect, data[i]!);
                         }
 
                         sendFbuMsg([{ x: 0, y: 0, width: 2, height: 2,
@@ -3229,11 +3229,11 @@ describe('Remote Frame Buffer protocol client', function () {
 
                         //AND-mask
                         for (let i = 0; i < data.length; i++) {
-                            push8(rect, data[i]);
+                            push8(rect, data[i]!);
                         }
                         //XOR-mask
                         for (let i = 0; i < data.length; i++) {
-                            push8(rect, data[i]);
+                            push8(rect, data[i]!);
                         }
 
                         sendFbuMsg([{ x: 0, y: 0, width: w, height: h,
@@ -3267,11 +3267,11 @@ describe('Remote Frame Buffer protocol client', function () {
 
                         //AND-mask
                         for (let i = 0; i < andMask.length; i++) {
-                            push8(rect, andMask[i]);
+                            push8(rect, andMask[i]!);
                         }
                         //XOR-mask
                         for (let i = 0; i < xorMask.length; i++) {
-                            push8(rect, xorMask[i]);
+                            push8(rect, xorMask[i]!);
                         }
 
                         let expectedRgba = [0x00, 0x00, 0x00, 0x00,
@@ -3308,7 +3308,7 @@ describe('Remote Frame Buffer protocol client', function () {
                         let h = 2;
 
                         for (let i = 0; i < data.length; i++) {
-                            push8(rect, data[i]);
+                            push8(rect, data[i]!);
                         }
 
                         let expectedRgba = [0xee, 0x55, 0xff, 0x00,

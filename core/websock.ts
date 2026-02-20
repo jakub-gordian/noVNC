@@ -119,13 +119,13 @@ export default class Websock {
 
         subState = this._websocket.readyState;
 
-        if (ReadyStates.CONNECTING.includes(subState)) {
+        if (ReadyStates.CONNECTING!.includes(subState)) {
             return "connecting";
-        } else if (ReadyStates.OPEN.includes(subState)) {
+        } else if (ReadyStates.OPEN!.includes(subState)) {
             return "open";
-        } else if (ReadyStates.CLOSING.includes(subState)) {
+        } else if (ReadyStates.CLOSING!.includes(subState)) {
             return "closing";
-        } else if (ReadyStates.CLOSED.includes(subState)) {
+        } else if (ReadyStates.CLOSED!.includes(subState)) {
             return "closed";
         }
 
@@ -134,7 +134,7 @@ export default class Websock {
 
     // Receive queue
     rQpeek8(): number {
-        return this._rQ![this._rQi];
+        return this._rQ![this._rQi]!;
     }
 
     rQskipBytes(bytes: number): void {
@@ -157,7 +157,7 @@ export default class Websock {
     _rQshift(bytes: number): number {
         let res = 0;
         for (let byte = bytes - 1; byte >= 0; byte--) {
-            res += this._rQ![this._rQi++] << (byte * 8);
+            res += this._rQ![this._rQi++]! << (byte * 8);
         }
         return res >>> 0;
     }
@@ -299,7 +299,7 @@ export default class Websock {
         // Must get object and class methods to be compatible with the tests.
         const channelProps = [...Object.keys(rawChannel), ...Object.getOwnPropertyNames(Object.getPrototypeOf(rawChannel))];
         for (let i = 0; i < rawChannelProps.length; i++) {
-            const prop = rawChannelProps[i];
+            const prop = rawChannelProps[i]!;
             if (channelProps.indexOf(prop) < 0) {
                 throw new Error('Raw channel missing property: ' + prop);
             }

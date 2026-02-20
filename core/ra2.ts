@@ -45,7 +45,7 @@ class RA2Cipher {
             iv: this._counter,
             additionalData: ad,
         } as { name: string }, this._cipher!, message);
-        for (let i = 0; i < 16 && this._counter[i]++ === 255; i++);
+        for (let i = 0; i < 16 && this._counter[i]!++ === 255; i++);
         const res = new Uint8Array(message.length + 2 + 16);
         res.set(ad);
         res.set(encrypted, 2);
@@ -59,7 +59,7 @@ class RA2Cipher {
             iv: this._counter,
             additionalData: ad,
         } as { name: string }, this._cipher!, encrypted);
-        for (let i = 0; i < 16 && this._counter[i]++ === 255; i++);
+        for (let i = 0; i < 16 && this._counter[i]!++ === 255; i++);
         return res;
     }
 }
@@ -298,7 +298,7 @@ export default class RSAAESAuthenticationState extends EventTargetMixin {
         if (subtypeArray === null) {
             throw new Error("RA2: failed to authenticate the message");
         }
-        const subtype = subtypeArray[0];
+        const subtype = subtypeArray[0]!;
         let waitCredentials = this._waitCredentialsAsync(subtype);
         if (subtype === 1) {
             if (this._getCredentials().username === undefined ||

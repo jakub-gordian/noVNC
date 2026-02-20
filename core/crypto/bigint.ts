@@ -28,7 +28,7 @@ export function bigIntToU8Array(bigint: bigint, padLength: number = 0): Uint8Arr
 export function u8ArrayToBigInt(arr: Uint8Array): bigint {
     let hex = '0x';
     for (let i = 0; i < arr.length; i++) {
-        hex += arr[i].toString(16).padStart(2, '0');
+        hex += arr[i]!.toString(16).padStart(2, '0');
     }
     return BigInt(hex);
 }
