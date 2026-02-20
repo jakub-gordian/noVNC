@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -8,7 +7,7 @@
  */
 
 // Decode from UTF-8
-export function decodeUTF8(utf8string, allowLatin1=false) {
+export function decodeUTF8(utf8string: string, allowLatin1: boolean = false): string {
     try {
         return decodeURIComponent(escape(utf8string));
     } catch (e) {
@@ -24,6 +23,6 @@ export function decodeUTF8(utf8string, allowLatin1=false) {
 }
 
 // Encode to UTF-8
-export function encodeUTF8(DOMString) {
+export function encodeUTF8(DOMString: string): string {
     return unescape(encodeURIComponent(DOMString));
 }
