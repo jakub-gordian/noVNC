@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2018 The noVNC authors
@@ -10,7 +9,7 @@
  * HTML key codes.
  */
 
-export default {
+const vkeys: Record<number, string> = {
     0x08: 'Backspace',
     0x09: 'Tab',
     0x0a: 'NumpadClear',
@@ -115,3 +114,5 @@ export default {
     0xb7: 'LaunchApp2',
     0xe1: 'AltRight', // Only when it is AltGraph
 };
+
+export default vkeys;

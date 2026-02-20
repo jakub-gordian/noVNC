@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2020 The noVNC authors
@@ -34,7 +33,38 @@ const GH_LONGPRESS_TIMEOUT = 1000;
 // Timeout when waiting to decide between PINCH and TWODRAG (ms)
 const GH_TWOTOUCH_TIMEOUT = 50;
 
+interface TrackedTouch {
+    id: number;
+    started: number;
+    active: boolean;
+    firstX: number;
+    firstY: number;
+    lastX: number;
+    lastY: number;
+    angle: number;
+}
+
+interface GesturePosition {
+    first: { x: number; y: number };
+    last: { x: number; y: number };
+}
+
+interface GestureMovement {
+    x: number;
+    y: number;
+}
+
 export default class GestureHandler {
+    _target: EventTarget | null;
+    _state: number;
+    _tracked: TrackedTouch[];
+    _ignored: number[];
+    _waitingRelease: boolean;
+    _releaseStart: number;
+    _longpressTimeoutId: ReturnType<typeof setTimeout> | null;
+    _twoTouchTimeoutId: ReturnType<typeof setTimeout> | null;
+    _boundEventHandler: EventListener;
+
     constructor() {
         this._target = null;
 
@@ -49,10 +79,10 @@ export default class GestureHandler {
         this._longpressTimeoutId = null;
         this._twoTouchTimeoutId = null;
 
-        this._boundEventHandler = this._eventHandler.bind(this);
+        this._boundEventHandler = this._eventHandler.bind(this) as EventListener;
     }
 
-    attach(target) {
+    attach(target: EventTarget): void {
         this.detach();
 
         this._target = target;
@@ -66,7 +96,7 @@ export default class GestureHandler {
                                       this._boundEventHandler);
     }
 
-    detach() {
+    detach(): void {
         if (!this._target) {
             return;
         }
@@ -85,8 +115,8 @@ export default class GestureHandler {
         this._target = null;
     }
 
-    _eventHandler(e) {
-        let fn;
+    _eventHandler(e: TouchEvent): void {
+        let fn: ((id: number, x: number, y: number) => void) | undefined;
 
         e.stopPropagation();
         e.preventDefault();
@@ -104,13 +134,15 @@ export default class GestureHandler {
                 break;
         }
 
+        if (!fn) return;
+
         for (let i = 0; i < e.changedTouches.length; i++) {
             let touch = e.changedTouches[i];
             fn.call(this, touch.identifier, touch.clientX, touch.clientY);
         }
     }
 
-    _touchStart(id, x, y) {
+    _touchStart(id: number, x: number, y: number): void {
         // Ignore any new touches if there is already an active gesture,
         // or we're in a cleanup state
         if (this._hasDetectedGesture() || (this._state === GH_NOGESTURE)) {
@@ -165,7 +197,7 @@ export default class GestureHandler {
         }
     }
 
-    _touchMove(id, x, y) {
+    _touchMove(id: number, x: number, y: number): void {
         let touch = this._tracked.find(t => t.id === id);
 
         // If this is an update for a touch we're not tracking, ignore it
@@ -208,7 +240,7 @@ export default class GestureHandler {
             if (this._tracked.length === 2) {
 
                 // The other touch is the one where the id doesn't match
-                let prevTouch = this._tracked.find(t => t.id !== id);
+                let prevTouch = this._tracked.find(t => t.id !== id)!;
 
                 // How far the previous touch point has moved since start
                 let prevDeltaMove = Math.hypot(prevTouch.firstX - prevTouch.lastX,
@@ -250,7 +282,7 @@ export default class GestureHandler {
         this._pushEvent('gesturemove');
     }
 
-    _touchEnd(id, x, y) {
+    _touchEnd(id: number, x: number, y: number): void {
         // Check if this is an ignored touch
         if (this._ignored.indexOf(id) !== -1) {
             // Remove this touch from ignored
@@ -311,7 +343,7 @@ export default class GestureHandler {
             }
 
             let touch = this._tracked.find(t => t.id === id);
-            touch.active = false;
+            touch!.active = false;
 
             // Are we still waiting for more releases?
             if (this._hasDetectedGesture()) {
@@ -350,7 +382,7 @@ export default class GestureHandler {
         }
     }
 
-    _hasDetectedGesture() {
+    _hasDetectedGesture(): boolean {
         if (this._state === GH_NOGESTURE) {
             return false;
         }
@@ -371,18 +403,20 @@ export default class GestureHandler {
         return true;
     }
 
-    _startLongpressTimeout() {
+    _startLongpressTimeout(): void {
         this._stopLongpressTimeout();
         this._longpressTimeoutId = setTimeout(() => this._longpressTimeout(),
                                               GH_LONGPRESS_TIMEOUT);
     }
 
-    _stopLongpressTimeout() {
-        clearTimeout(this._longpressTimeoutId);
+    _stopLongpressTimeout(): void {
+        if (this._longpressTimeoutId !== null) {
+            clearTimeout(this._longpressTimeoutId);
+        }
         this._longpressTimeoutId = null;
     }
 
-    _longpressTimeout() {
+    _longpressTimeout(): void {
         if (this._hasDetectedGesture()) {
             throw new Error("A longpress gesture failed, conflict with a different gesture");
         }
@@ -391,22 +425,24 @@ export default class GestureHandler {
         this._pushEvent('gesturestart');
     }
 
-    _startTwoTouchTimeout() {
+    _startTwoTouchTimeout(): void {
         this._stopTwoTouchTimeout();
         this._twoTouchTimeoutId = setTimeout(() => this._twoTouchTimeout(),
                                              GH_TWOTOUCH_TIMEOUT);
     }
 
-    _stopTwoTouchTimeout() {
-        clearTimeout(this._twoTouchTimeoutId);
+    _stopTwoTouchTimeout(): void {
+        if (this._twoTouchTimeoutId !== null) {
+            clearTimeout(this._twoTouchTimeoutId);
+        }
         this._twoTouchTimeoutId = null;
     }
 
-    _isTwoTouchTimeoutRunning() {
+    _isTwoTouchTimeoutRunning(): boolean {
         return this._twoTouchTimeoutId !== null;
     }
 
-    _twoTouchTimeout() {
+    _twoTouchTimeout(): void {
         if (this._tracked.length === 0) {
             throw new Error("A pinch or two drag gesture failed, no tracked touches");
         }
@@ -433,8 +469,8 @@ export default class GestureHandler {
         this._pushEvent('gesturemove');
     }
 
-    _pushEvent(type) {
-        let detail = { type: this._stateToGesture(this._state) };
+    _pushEvent(type: string): void {
+        let detail: Record<string, string | number> = { type: this._stateToGesture(this._state) };
 
         // For most gesture events the current (average) position is the
         // most useful
@@ -483,10 +519,10 @@ export default class GestureHandler {
         }
 
         let gev = new CustomEvent(type, { detail: detail });
-        this._target.dispatchEvent(gev);
+        this._target!.dispatchEvent(gev);
     }
 
-    _stateToGesture(state) {
+    _stateToGesture(state: number): string {
         switch (state) {
             case GH_ONETAP:
                 return 'onetap';
@@ -507,7 +543,7 @@ export default class GestureHandler {
         throw new Error("Unknown gesture state: " + state);
     }
 
-    _getPosition() {
+    _getPosition(): GesturePosition {
         if (this._tracked.length === 0) {
             throw new Error("Failed to get gesture position, no tracked touches");
         }
@@ -528,7 +564,7 @@ export default class GestureHandler {
                          y: ly / size } };
     }
 
-    _getAverageMovement() {
+    _getAverageMovement(): GestureMovement {
         if (this._tracked.length === 0) {
             throw new Error("Failed to get gesture movement, no tracked touches");
         }
@@ -546,7 +582,7 @@ export default class GestureHandler {
                  y: totalV / size };
     }
 
-    _getAverageDistance() {
+    _getAverageDistance(): GesturePosition {
         if (this._tracked.length === 0) {
             throw new Error("Failed to get gesture distance, no tracked touches");
         }

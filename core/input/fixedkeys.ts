@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2018 The noVNC authors
@@ -17,7 +16,7 @@
 
 /* eslint-disable key-spacing */
 
-export default {
+const fixedkeys: Record<string, string> = {
 
 // 3.1.1.1. Writing System Keys
 
@@ -128,3 +127,5 @@ export default {
     'AudioVolumeUp':    'AudioVolumeUp',
     'WakeUp':           'WakeUp',
 };
+
+export default fixedkeys;

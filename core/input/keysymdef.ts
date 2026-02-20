@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * Mapping from Unicode codepoints to X11/RFB keysyms
  *
@@ -8,7 +7,7 @@
 
 /* Functions at the bottom */
 
-const codepoints = {
+const codepoints: Record<number, number> = {
     0x0100: 0x03c0, // XK_Amacron
     0x0101: 0x03e0, // XK_amacron
     0x0102: 0x01c3, // XK_Abreve
@@ -671,7 +670,7 @@ const codepoints = {
 };
 
 export default {
-    lookup(u) {
+    lookup(u: number): number {
         // Latin-1 is one-to-one mapping
         if ((u >= 0x20) && (u <= 0xff)) {
             return u;

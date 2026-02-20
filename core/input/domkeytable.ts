@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2018 The noVNC authors
@@ -14,22 +13,25 @@ import KeyTable from "./keysym.ts";
  * See https://www.w3.org/TR/uievents-key/ for possible values.
  */
 
-const DOMKeyTable = {};
+// Each entry is [default, left, right, numpad]
+type KeysymQuad = [number, number, number, number];
 
-function addStandard(key, standard) {
+const DOMKeyTable: Record<string, KeysymQuad> = {};
+
+function addStandard(key: string, standard: number): void {
     if (standard === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
     if (key in DOMKeyTable) throw new Error("Duplicate entry for key \"" + key + "\"");
     DOMKeyTable[key] = [standard, standard, standard, standard];
 }
 
-function addLeftRight(key, left, right) {
+function addLeftRight(key: string, left: number, right: number): void {
     if (left === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
     if (right === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
     if (key in DOMKeyTable) throw new Error("Duplicate entry for key \"" + key + "\"");
     DOMKeyTable[key] = [left, left, right, left];
 }
 
-function addNumpad(key, standard, numpad) {
+function addNumpad(key: string, standard: number, numpad: number): void {
     if (standard === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
     if (numpad === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
     if (key in DOMKeyTable) throw new Error("Duplicate entry for key \"" + key + "\"");

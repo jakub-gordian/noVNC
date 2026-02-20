@@ -1,7 +1,6 @@
-// @ts-nocheck
 /* eslint-disable key-spacing */
 
-export default {
+const KeyTable: Record<string, number> = {
     XK_VoidSymbol:                  0xffffff, /* Void symbol */
 
     XK_BackSpace:                   0xff08, /* Back space, back char */
@@ -615,3 +614,5 @@ export default {
     XF86XK_LogWindowTree:           0x1008FE24,
     XF86XK_LogGrabInfo:             0x1008FE25,
 };
+
+export default KeyTable;

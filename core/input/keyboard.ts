@@ -1,4 +1,3 @@
-// @ts-nocheck
 /*
  * noVNC: HTML5 VNC client
  * Copyright (C) 2019 The noVNC authors
@@ -16,18 +15,32 @@ import * as browser from "../util/browser.ts";
 //
 
 export default class Keyboard {
-    constructor(target) {
+    _target: EventTarget | null;
+    _keyDownList: Record<string, number>;
+    _altGrArmed: boolean;
+    _altGrTimeout: ReturnType<typeof setTimeout> | undefined;
+    _altGrCtrlTime: number;
+    _eventHandlers: {
+        keyup: EventListener;
+        keydown: EventListener;
+        blur: EventListener;
+    };
+    onkeyevent: (keysym: number, code: string, down: boolean, numlock?: boolean | null, capslock?: boolean | null) => void;
+
+    constructor(target?: EventTarget | null) {
         this._target = target || null;
 
         this._keyDownList = {};         // List of depressed keys
                                         // (even if they are happy)
         this._altGrArmed = false;       // Windows AltGr detection
+        this._altGrTimeout = undefined;
+        this._altGrCtrlTime = 0;
 
         // keep these here so we can refer to them later
         this._eventHandlers = {
-            'keyup': this._handleKeyUp.bind(this),
-            'keydown': this._handleKeyDown.bind(this),
-            'blur': this._allKeysUp.bind(this),
+            'keyup': this._handleKeyUp.bind(this) as EventListener,
+            'keydown': this._handleKeyDown.bind(this) as EventListener,
+            'blur': this._allKeysUp.bind(this) as EventListener,
         };
 
         // ===== EVENT HANDLERS =====
@@ -37,7 +50,7 @@ export default class Keyboard {
 
     // ===== PRIVATE METHODS =====
 
-    _sendKeyEvent(keysym, code, down, numlock = null, capslock = null) {
+    _sendKeyEvent(keysym: number, code: string, down: boolean, numlock: boolean | null = null, capslock: boolean | null = null): void {
         if (down) {
             this._keyDownList[code] = keysym;
         } else {
@@ -54,7 +67,7 @@ export default class Keyboard {
         this.onkeyevent(keysym, code, down, numlock, capslock);
     }
 
-    _getKeyCode(e) {
+    _getKeyCode(e: KeyboardEvent): string {
         const code = KeyboardUtil.getKeycode(e);
         if (code !== 'Unidentified') {
             return code;
@@ -70,26 +83,27 @@ export default class Keyboard {
 
         // A precursor to the final DOM3 standard. Unfortunately it
         // is not layout independent, so it is as bad as using keyCode
-        if (e.keyIdentifier) {
+        const keyIdentifier = (e as KeyboardEvent & { keyIdentifier?: string }).keyIdentifier;
+        if (keyIdentifier) {
             // Non-character key?
-            if (e.keyIdentifier.substr(0, 2) !== 'U+') {
-                return e.keyIdentifier;
+            if (keyIdentifier.substr(0, 2) !== 'U+') {
+                return keyIdentifier;
             }
 
-            const codepoint = parseInt(e.keyIdentifier.substr(2), 16);
+            const codepoint = parseInt(keyIdentifier.substr(2), 16);
             const char = String.fromCharCode(codepoint).toUpperCase();
 
-            return 'Platform' + char.charCodeAt();
+            return 'Platform' + char.charCodeAt(0);
         }
 
         return 'Unidentified';
     }
 
-    _handleKeyDown(e) {
+    _handleKeyDown(e: KeyboardEvent): void {
         const code = this._getKeyCode(e);
         let keysym = KeyboardUtil.getKeysym(e);
-        let numlock = e.getModifierState('NumLock');
-        let capslock = e.getModifierState('CapsLock');
+        let numlock: boolean | null = e.getModifierState('NumLock');
+        let capslock: boolean | null = e.getModifierState('CapsLock');
 
         // getModifierState for NumLock is not supported on mac and ios and always returns false.
         // Set to null to indicate unknown/unsupported instead.
@@ -167,8 +181,8 @@ export default class Keyboard {
         // while meta is held down
         if ((browser.isMac() || browser.isIOS()) &&
             (e.metaKey && code !== 'MetaLeft' && code !== 'MetaRight')) {
-            this._sendKeyEvent(keysym, code, true, numlock, capslock);
-            this._sendKeyEvent(keysym, code, false, numlock, capslock);
+            this._sendKeyEvent(keysym!, code, true, numlock, capslock);
+            this._sendKeyEvent(keysym!, code, false, numlock, capslock);
             stopEvent(e);
             return;
         }
@@ -191,7 +205,7 @@ export default class Keyboard {
                             KeyTable.XK_Katakana,
                             KeyTable.XK_Hiragana,
                             KeyTable.XK_Romaji ];
-        if (browser.isWindows() && jpBadKeys.includes(keysym)) {
+        if (browser.isWindows() && keysym !== null && jpBadKeys.includes(keysym)) {
             this._sendKeyEvent(keysym, code, true, numlock, capslock);
             this._sendKeyEvent(keysym, code, false, numlock, capslock);
             stopEvent(e);
@@ -209,10 +223,10 @@ export default class Keyboard {
             return;
         }
 
-        this._sendKeyEvent(keysym, code, true, numlock, capslock);
+        this._sendKeyEvent(keysym!, code, true, numlock, capslock);
     }
 
-    _handleKeyUp(e) {
+    _handleKeyUp(e: KeyboardEvent): void {
         stopEvent(e);
 
         const code = this._getKeyCode(e);
@@ -246,7 +260,7 @@ export default class Keyboard {
         }
     }
 
-    _interruptAltGrSequence() {
+    _interruptAltGrSequence(): void {
         if (this._altGrArmed) {
             this._altGrArmed = false;
             clearTimeout(this._altGrTimeout);
@@ -254,7 +268,7 @@ export default class Keyboard {
         }
     }
 
-    _allKeysUp() {
+    _allKeysUp(): void {
         Log.Debug(">> Keyboard.allKeysUp");
 
         // Prevent control key being processed after losing focus.
@@ -268,11 +282,11 @@ export default class Keyboard {
 
     // ===== PUBLIC METHODS =====
 
-    grab() {
+    grab(): void {
         //Log.Debug(">> Keyboard.grab");
 
-        this._target.addEventListener('keydown', this._eventHandlers.keydown);
-        this._target.addEventListener('keyup', this._eventHandlers.keyup);
+        this._target!.addEventListener('keydown', this._eventHandlers.keydown);
+        this._target!.addEventListener('keyup', this._eventHandlers.keyup);
 
         // Release (key up) if window loses focus
         window.addEventListener('blur', this._eventHandlers.blur);
@@ -280,11 +294,11 @@ export default class Keyboard {
         //Log.Debug("<< Keyboard.grab");
     }
 
-    ungrab() {
+    ungrab(): void {
         //Log.Debug(">> Keyboard.ungrab");
 
-        this._target.removeEventListener('keydown', this._eventHandlers.keydown);
-        this._target.removeEventListener('keyup', this._eventHandlers.keyup);
+        this._target!.removeEventListener('keydown', this._eventHandlers.keydown);
+        this._target!.removeEventListener('keyup', this._eventHandlers.keyup);
         window.removeEventListener('blur', this._eventHandlers.blur);
 
         // Release (key up) all keys that are in a down state
