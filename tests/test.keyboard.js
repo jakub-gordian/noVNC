@@ -1,6 +1,6 @@
 import { describe, expect, test, beforeEach, afterEach, mock, spyOn, jest } from "bun:test";
 
-import Keyboard from '../core/input/keyboard.js';
+import Keyboard from '../core/input/keyboard.ts';
 
 // Helper: check that a mock was called with specific leading args
 // (ignoring trailing args like numLock/capsLock)

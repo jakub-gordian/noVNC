@@ -2,7 +2,7 @@
 
 import * as WebUtil from '../app/webutil.js';
 import RecordingPlayer from './playback.js';
-import Base64 from '../core/base64.js';
+import Base64 from '../core/base64.ts';
 
 let frames = null;
 

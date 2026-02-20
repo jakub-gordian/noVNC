@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { toUnsigned32bit, toSigned32bit } from '../core/util/int.js';
+import { toUnsigned32bit, toSigned32bit } from '../core/util/int.ts';
 
 describe('Integer casting', () => {
     test('should cast unsigned to signed', () => {

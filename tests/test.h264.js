@@ -1,13 +1,13 @@
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
 import "./test-helpers.js";
 
-import Websock from '../core/websock.js';
-import Display from '../core/display.js';
+import Websock from '../core/websock.ts';
+import Display from '../core/display.ts';
 
-import { H264Parser } from '../core/decoders/h264.js';
-import H264Decoder from '../core/decoders/h264.js';
-import Base64 from '../core/base64.js';
-import { supportsWebCodecsH264Decode } from '../core/util/browser.js';
+import { H264Parser } from '../core/decoders/h264.ts';
+import H264Decoder from '../core/decoders/h264.ts';
+import Base64 from '../core/base64.ts';
+import { supportsWebCodecsH264Decode } from '../core/util/browser.ts';
 
 import FakeWebSocket from './fake.websocket.js';
 

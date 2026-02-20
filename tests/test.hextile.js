@@ -1,10 +1,10 @@
 import { describe, expect, test, beforeEach, beforeAll, afterAll } from "bun:test";
 import "./test-helpers.js";
 
-import Websock from '../core/websock.js';
-import Display from '../core/display.js';
+import Websock from '../core/websock.ts';
+import Display from '../core/display.ts';
 
-import HextileDecoder from '../core/decoders/hextile.js';
+import HextileDecoder from '../core/decoders/hextile.ts';
 
 import FakeWebSocket from './fake.websocket.js';
 

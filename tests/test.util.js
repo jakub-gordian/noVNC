@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 import { describe, expect, test, beforeEach, afterEach, spyOn } from "bun:test";
 
-import * as Log from '../core/util/logging.js';
-import { encodeUTF8, decodeUTF8 } from '../core/util/strings.js';
+import * as Log from '../core/util/logging.ts';
+import { encodeUTF8, decodeUTF8 } from '../core/util/strings.ts';
 
 describe('Utils', function () {
     describe('logging functions', function () {

@@ -2,7 +2,7 @@ import { describe, expect, test, beforeEach, afterEach } from "bun:test";
 
 import { isMac, isWindows, isIOS, isAndroid, isChromeOS,
          isSafari, isFirefox, isChrome, isChromium, isOpera, isEdge,
-         isGecko, isWebKit, isBlink } from '../core/util/browser.js';
+         isGecko, isWebKit, isBlink } from '../core/util/browser.ts';
 
 describe('OS detection', function () {
     let origNavigator;

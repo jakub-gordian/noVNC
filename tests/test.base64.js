@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import Base64 from '../core/base64.js';
+import Base64 from '../core/base64.ts';
 
 describe('Base64 tools', () => {
 

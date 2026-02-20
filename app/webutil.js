@@ -6,7 +6,7 @@
  * See README.md for usage and integration instructions.
  */
 
-import * as Log from '../core/util/logging.js';
+import * as Log from '../core/util/logging.ts';
 
 // init log level reading the logging HTTP param
 export function initLogging(level) {

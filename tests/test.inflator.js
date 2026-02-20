@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import "./test-helpers.js";
 import { deflateInit, deflate, Z_FULL_FLUSH } from "../vendor/pako/lib/zlib/deflate.js";
 import ZStream from "../vendor/pako/lib/zlib/zstream.js";
-import Inflator from "../core/inflator.js";
+import Inflator from "../core/inflator.ts";
 
 function _deflator(data) {
     let strm = new ZStream();

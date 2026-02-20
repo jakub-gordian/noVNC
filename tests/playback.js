@@ -4,8 +4,8 @@
  * Licensed under MPL 2.0 (see LICENSE.txt)
  */
 
-import RFB from '../core/rfb.js';
-import * as Log from '../core/util/logging.js';
+import RFB from '../core/rfb.ts';
+import * as Log from '../core/util/logging.ts';
 
 // Immediate polyfill
 if (window.setImmediate === undefined) {

@@ -1,4 +1,4 @@
-import Base64 from '../core/base64.js';
+import Base64 from '../core/base64.ts';
 
 export default class FakeWebSocket {
     constructor(uri, protocols) {

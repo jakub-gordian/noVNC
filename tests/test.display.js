@@ -1,8 +1,8 @@
 import { describe, expect, test, beforeEach, afterEach, mock, spyOn } from "bun:test";
 import "./test-helpers.js";
 
-import Base64 from '../core/base64.js';
-import Display from '../core/display.js';
+import Base64 from '../core/base64.ts';
+import Display from '../core/display.ts';
 
 describe('Display/Canvas helper', function () {
     const checkedData = new Uint8ClampedArray([

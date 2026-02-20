@@ -6,16 +6,16 @@
  * See README.md for usage and integration instructions.
  */
 
-import * as Log from '../core/util/logging.js';
+import * as Log from '../core/util/logging.ts';
 import _, { l10n } from './localization.js';
 import { isTouchDevice, isMac, isIOS, isAndroid, isChromeOS, isSafari,
          hasScrollbarGutter, dragThreshold }
-    from '../core/util/browser.js';
-import { setCapture, getPointerEvent } from '../core/util/events.js';
-import KeyTable from "../core/input/keysym.js";
-import keysyms from "../core/input/keysymdef.js";
-import Keyboard from "../core/input/keyboard.js";
-import RFB from "../core/rfb.js";
+    from '../core/util/browser.ts';
+import { setCapture, getPointerEvent } from '../core/util/events.ts';
+import KeyTable from "../core/input/keysym.ts";
+import keysyms from "../core/input/keysymdef.ts";
+import Keyboard from "../core/input/keyboard.ts";
+import RFB from "../core/rfb.ts";
 import * as WebUtil from "./webutil.js";
 
 // Import mediabunny for MP4 encoding (dynamically loaded when needed)

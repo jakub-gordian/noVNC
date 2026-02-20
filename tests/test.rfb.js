@@ -1,15 +1,15 @@
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, spyOn, jest } from "bun:test";
 import "./test-helpers.js";
 
-import RFB from '../core/rfb.js';
-import Websock from '../core/websock.js';
+import RFB from '../core/rfb.ts';
+import Websock from '../core/websock.ts';
 import ZStream from "../vendor/pako/lib/zlib/zstream.js";
 import { deflateInit, deflate, Z_DEFAULT_COMPRESSION } from "../vendor/pako/lib/zlib/deflate.js";
-import { encodings } from '../core/encodings.js';
-import { toUnsigned32bit } from '../core/util/int.js';
-import { encodeUTF8 } from '../core/util/strings.js';
-import KeyTable from '../core/input/keysym.js';
-import legacyCrypto from '../core/crypto/crypto.js';
+import { encodings } from '../core/encodings.ts';
+import { toUnsigned32bit } from '../core/util/int.ts';
+import { encodeUTF8 } from '../core/util/strings.ts';
+import KeyTable from '../core/input/keysym.ts';
+import legacyCrypto from '../core/crypto/crypto.ts';
 
 import FakeWebSocket from './fake.websocket.js';
 

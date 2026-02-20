@@ -1,8 +1,8 @@
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, jest } from "bun:test";
 
-import EventTargetMixin from '../core/util/eventtarget.js';
+import EventTargetMixin from '../core/util/eventtarget.ts';
 
-import GestureHandler from '../core/input/gesturehandler.js';
+import GestureHandler from '../core/input/gesturehandler.ts';
 
 class DummyTarget extends EventTargetMixin {
 }

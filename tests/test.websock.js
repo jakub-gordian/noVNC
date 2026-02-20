@@ -1,7 +1,7 @@
 import { describe, expect, test, beforeEach, afterEach, beforeAll, afterAll, mock, spyOn } from "bun:test";
 import "./test-helpers.js";
 
-import Websock from '../core/websock.js';
+import Websock from '../core/websock.ts';
 import FakeWebSocket from './fake.websocket.js';
 
 describe('Websock', function () {
